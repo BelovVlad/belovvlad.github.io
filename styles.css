@@ -29,6 +29,7 @@ span[data-icon]{display:inline-flex;align-items:center;justify-content:center}
 .topbar{height:80px;display:flex;align-items:center;gap:38px;padding:0 max(28px,calc((100vw - 1200px)/2));border-bottom:1px solid var(--line2)}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none}
 .brand-mark{display:block;width:39px;height:39px}
+:root[data-theme=light] .brand-mark{filter:brightness(.64) saturate(.8)}
 .brand strong{font:700 24px/1 Georgia,"Times New Roman",serif;color:var(--cream);letter-spacing:-.025em}
 .searchbox{display:flex;align-items:center;gap:11px;margin-left:auto;max-width:570px;width:100%;min-width:0;height:43px;border:1px solid var(--line);border-radius:9px;padding:0 13px;color:var(--muted);background:var(--bg2)}
 .searchbox>.icon{width:18px;height:18px}
