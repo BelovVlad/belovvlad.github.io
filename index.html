@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="PweB — персональное пространство для учёбы, проектов и повседневных инструментов.">
+  <meta name="theme-color" content="#080d12">
+  <meta name="color-scheme" content="dark light">
+  <title>Home · PweB</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">К содержимому</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="PweB — главная"><span class="brand-mark">P<span>·</span></span><strong>PweB</strong></a>
+      <label class="searchbox"><span data-icon="search"></span><input id="search" type="search" placeholder="Найти сайт, проект или что-то важное…" aria-label="Поиск по хабу" autocomplete="off"><kbd>Ctrl K</kbd></label>
+      <div class="top-actions"><button class="icon-button" id="theme-toggle" aria-label="Переключить тему"><span data-icon="sun"></span></button><button class="icon-button" id="settings-button" aria-label="Настройки"><span data-icon="settings"></span></button><span class="profile"><span class="avatar" aria-hidden="true">В</span><span>Влад</span></span></div>
+    </header>
+    <main id="main" tabindex="-1">
+      <section class="welcome">
+        <div class="hero-art" aria-hidden="true"></div>
+        <div class="welcome-copy"><div class="eyebrow"><span></span>ЛИЧНОЕ ПРОСТРАНСТВО</div><h1>Всё важное <span>в одном месте.</span></h1><p>Учёба, проекты, заметки и инструменты.<br>Ваш маленький центр управления большим миром.</p></div>
+        <div class="welcome-date"><span id="hero-time"></span><strong id="top-date"></strong><span>Хорошо, что вы здесь, Влад.</span></div>
+      </section>
+      <section class="favorites-section" id="favorites-section" aria-labelledby="favorites-title"><div class="section-heading"><h2 id="favorites-title"><span data-icon="star"></span>Всегда под рукой</h2><span class="section-hint">ИЗБРАННОЕ</span></div><div class="favorites-grid" id="favorites"></div></section>
+      <div class="collection-toolbar"><nav id="navigation" aria-label="Разделы хаба"></nav><button class="icon-button" id="add-category" aria-label="Новый раздел" title="Новый раздел"><span data-icon="plus"></span></button></div>
+      <div class="dashboard-layout">
+      <section class="library" aria-labelledby="library-title"><div class="library-heading"><div><div class="eyebrow">ВАША КОЛЛЕКЦИЯ</div><h2 id="library-title">Все ресурсы <span id="resource-count" class="count"></span></h2></div><div class="view-toggle" role="group" aria-label="Вид ресурсов"><button class="icon-button active" id="view-grid" aria-label="Сетка" aria-pressed="true"><span data-icon="grid"></span></button><button class="icon-button" id="view-list" aria-label="Список" aria-pressed="false"><span data-icon="list"></span></button></div></div><div id="resources"></div></section>
+      <aside class="widgets" aria-label="На каждый день">
+        <button class="button primary" id="add-resource"><span data-icon="plus"></span><span>Добавить ресурс</span></button>
+        <section class="widget today-widget"><div class="widget-heading"><h2><span data-icon="check"></span>На сегодня</h2><span id="todo-count"></span></div><div id="todos"></div><form id="todo-form"><input name="task" maxlength="180" aria-label="Новая задача" placeholder="Что хочется сделать?" required><button class="icon-button" aria-label="Добавить задачу"><span data-icon="plus"></span></button></form></section>
+        <section class="widget"><div class="widget-heading"><h2><span data-icon="link"></span>Быстрые ссылки</h2></div><div id="quick-links"></div></section>
+        <div class="quiet-note"><span>“</span><p>Для больших идей<br>иногда нужен только<br><strong>один маленький шаг.</strong></p><span class="quiet-line"></span><small>В ВАШЕМ РИТМЕ</small></div>
+      </aside>
+      </div>
+      <footer><a href="https://github.com/BelovVlad/belovvlad.github.io" target="_blank" rel="noopener noreferrer"><span class="footer-mark">P·</span>Ваши ссылки. Ваш ритм.<span data-icon="github"></span></a><span id="save-status"><span class="status-dot"></span>Сохраняется в этом браузере</span></footer>
+    </main>
+  </div>
+  <dialog id="resource-dialog" aria-labelledby="resource-dialog-title">
+    <form id="resource-form"><div class="dialog-head"><div><div class="eyebrow">КОЛЛЕКЦИЯ</div><h2 id="resource-dialog-title">Новый ресурс</h2></div><button class="icon-button" type="button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div>
+      <label>Название<input name="title" maxlength="100" required placeholder="Например, мой проект"></label>
+      <label>Ссылка <span class="optional">необязательно</span><input name="url" type="url" maxlength="2048" placeholder="https://…"><small>Без ссылки карточка станет заготовкой.</small></label>
+      <label>Короткое описание<textarea name="description" maxlength="300" rows="2" placeholder="Для чего этот ресурс?"></textarea></label>
+      <div class="form-row"><label>Раздел<select name="category" required></select></label><label>Иконка<select name="icon"></select></label></div>
+      <label class="checkbox-label"><input type="checkbox" name="favorite">Закрепить в быстром доступе</label>
+      <p class="form-error" id="resource-error" role="alert"></p><div class="dialog-actions"><button class="button" type="button" data-close>Отмена</button><button class="button primary" type="submit">Сохранить</button></div>
+    </form>
+  </dialog>
+  <dialog id="category-dialog" aria-labelledby="category-dialog-title"><form id="category-form"><div class="dialog-head"><h2 id="category-dialog-title">Новый раздел</h2><button class="icon-button" type="button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div><label>Название<input name="name" maxlength="60" required placeholder="Например, Inspiration"></label><label>Описание<input name="description" maxlength="180" placeholder="Что будет в этом разделе"></label><label>Иконка<select name="icon"></select></label><p class="form-error" id="category-error" role="alert"></p><div class="dialog-actions"><button class="button" type="button" data-close>Отмена</button><button class="button primary" type="submit">Сохранить</button></div></form></dialog>
+  <dialog id="settings-dialog" aria-labelledby="settings-title"><div class="dialog-head"><div><div class="eyebrow">ВАШЕ ПРОСТРАНСТВО</div><h2 id="settings-title">Настройки</h2></div><button class="icon-button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div>
+    <section class="settings-section"><h3>Внешний вид</h3><label>Тема<select id="theme-select"><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="system">Как в системе</option></select></label><label class="checkbox-label"><input type="checkbox" id="new-tab">Открывать ссылки в новой вкладке</label></section>
+    <section class="settings-section"><h3>Перенос между устройствами</h3><p>Ссылки и настройки хранятся в этом браузере. Скачайте JSON-копию, чтобы перенести их на другое устройство.</p><div class="backup-actions"><button class="button" id="export-config"><span data-icon="download"></span>Экспорт JSON</button><button class="button" id="import-config"><span data-icon="upload"></span>Импорт JSON</button></div><input type="file" id="import-file" accept=".json,application/json" hidden><p class="form-error" id="import-error" role="alert"></p></section>
+    <section class="settings-section"><h3>Разделы</h3><div id="category-manager"></div><button class="text-button" id="settings-add-category"><span data-icon="plus"></span>Добавить раздел</button></section>
+    <p class="settings-footnote">PweB · Home 1.0 <span>Сделано для вашего ритма</span></p>
+  </dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-head"><h2 id="confirm-title"></h2></div><p id="confirm-message"></p><div class="dialog-actions"><button class="button" id="confirm-cancel">Отмена</button><button class="button primary" id="confirm-accept">Продолжить</button></div></dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <noscript><p class="noscript">Для поиска и сохранения настроек включите JavaScript. <a href="https://belovvlad.github.io/NSU_FP_Y4_S1/">Открыть материалы НГУ</a> · <a href="https://belovvlad.github.io/DarkNotes/">Открыть DarkNotes</a></p></noscript>
+</body>
+</html>
