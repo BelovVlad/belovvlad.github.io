@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/serve.mjs",
+    "sync:diploma": "node scripts/sync-diploma.mjs",
     "test": "node --test tests/model.test.js",
     "test:e2e": "playwright test"
   },

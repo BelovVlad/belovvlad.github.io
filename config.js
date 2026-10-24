@@ -1,9 +1,14 @@
-export const CURRENT_REVISION = 3;
+export const CURRENT_REVISION = 4;
 export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'PDF-материалы, пояснения и презентация дипломной работы', icon:'folder' };
 export const DIPLOMA_RESOURCES = [
-  { id:'diploma-materials', title:'Материалы диплома', description:'PDF с пояснениями, расчётами и дополнительными материалами.', url:'https://pweb-diploma.swoonybard26.chatgpt.site/', category:'diploma', icon:'book', favorite:false },
-  { id:'diploma-presentation', title:'Презентация диплома', description:'Экстракционный узел ионного источника. Интерактивная 3D-презентация.', url:'https://pweb-diploma.swoonybard26.chatgpt.site/web/', category:'diploma', icon:'code', favorite:false }
+  { id:'diploma-materials', title:'Материалы диплома', description:'PDF с пояснениями, расчётами и дополнительными материалами.', url:'https://belovvlad.github.io/diploma/', category:'diploma', icon:'book', favorite:false },
+  { id:'diploma-presentation', title:'Презентация диплома', description:'Экстракционный узел ионного источника. Интерактивная 3D-презентация.', url:'https://belovvlad.github.io/diploma/web/', category:'diploma', icon:'code', favorite:false }
 ];
+// Former Sites hosting; revision 4 moves saved cards to GitHub Pages.
+export const DIPLOMA_MOVED = {
+  'https://pweb-diploma.swoonybard26.chatgpt.site/':'https://belovvlad.github.io/diploma/',
+  'https://pweb-diploma.swoonybard26.chatgpt.site/web/':'https://belovvlad.github.io/diploma/web/'
+};
 
 // Initial resources only. Personal changes are stored in this browser.
 export default {

@@ -1,0 +1,252 @@
+// Rendering engine shared by the Jupyter view and the standalone HTML deck.
+// Geometry comes from data/geometry.js (presentation/build_scene_data.py):
+// millimetres in the IBSimu assembly frame, beam along +Y.
+(function () {
+'use strict';
+
+const IBS = window.IBS = window.IBS || {};
+
+// Display-only orientation: beam (+Y of the assembly) runs horizontally along
+// world +X, assembly Z stays horizontal, assembly X becomes vertical. All parts
+// share this single transform, so relative placement stays exactly as in IBSimu.
+const DISPLAY_ROTATION = new THREE.Euler(0, 0, -Math.PI / 2);
+
+const MATERIALS = {
+  ion_source_body:        { color: 0x8c939b, roughness: 0.44 },
+  source_diaphragm:       { color: 0xaeb3b9, roughness: 0.32 },
+  accelerating_diaphragm: { color: 0xb3b7bd, roughness: 0.30 },
+  suppressor_diaphragm:   { color: 0xa9aeb5, roughness: 0.34 },
+  faraday_cup:            { color: 0x8a9098, roughness: 0.40 },
+};
+
+function decodeBase64(text) {
+  const binary = atob(text);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function decodePart(part) {
+  const q = new Uint16Array(decodeBase64(part.position));
+  const position = new Float32Array(q.length);
+  for (let i = 0; i < q.length; i++) {
+    const axis = i % 3;
+    position[i] = part.min[axis] + (q[i] / 65535) * (part.max[axis] - part.min[axis]);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(new Int8Array(decodeBase64(part.normal)), 3, true));
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+// Studio environment for metallic reflections, built in code (no HDR files needed offline).
+function studioEnvironment(renderer) {
+  const env = new THREE.Scene();
+  const shell = new THREE.Mesh(
+    new THREE.SphereGeometry(50, 32, 16),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: 'varying vec3 vDir; void main(){ float h = vDir.y*0.5+0.5; vec3 c = mix(vec3(0.015,0.017,0.02), vec3(0.11,0.12,0.135), smoothstep(0.2,1.0,h)); gl_FragColor = vec4(c,1.0); }',
+    })
+  );
+  env.add(shell);
+  const softbox = (w, h, intensity, position, tint) => {
+    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(tint || 0xffffff).multiplyScalar(intensity), side: THREE.DoubleSide });
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
+    panel.position.copy(position);
+    panel.lookAt(0, 0, 0);
+    env.add(panel);
+  };
+  softbox(40, 12, 2.2, new THREE.Vector3(0, 30, 10));
+  softbox(10, 30, 1.2, new THREE.Vector3(-35, 6, 18), 0xdfe8ff);
+  softbox(10, 24, 1.1, new THREE.Vector3(32, 4, -20), 0xfff1e0);
+  softbox(30, 4, 0.6, new THREE.Vector3(0, -6, -40));
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const texture = pmrem.fromScene(env, 0.04).texture;
+  pmrem.dispose();
+  return texture;
+}
+
+function groundGrid(size) {
+  return new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      extensions: { derivatives: true },
+      uniforms: { uOpacity: { value: 1 }, uFade: { value: new THREE.Vector2(120, 420) } },
+      vertexShader: 'varying vec3 vWorld; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+      fragmentShader: [
+        'uniform float uOpacity; uniform vec2 uFade; varying vec3 vWorld;',
+        'float lines(vec2 p, float step){ vec2 g = abs(fract(p/step - 0.5) - 0.5) / fwidth(p/step); return 1.0 - min(min(g.x,g.y),1.0); }',
+        'void main(){',
+        '  float minor = lines(vWorld.xz, 10.0) * 0.35;',
+        '  float major = lines(vWorld.xz, 50.0);',
+        '  float fade = 1.0 - smoothstep(uFade.x, uFade.y, length(vWorld.xz));',
+        '  float a = max(minor, major * 0.75) * fade * uOpacity * 0.22;',
+        '  gl_FragColor = vec4(vec3(0.55,0.66,0.78), a);',
+        '}',
+      ].join('\n'),
+    })
+  );
+}
+
+class Engine {
+  constructor(container, data) {
+    this.container = container;
+    this.data = data;
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(this.renderer.domElement);
+
+    this.scene = new THREE.Scene();
+    this.scene.environment = studioEnvironment(this.renderer);
+    this.camera = new THREE.PerspectiveCamera(28, 1, 1, 5000);
+    this.target = new THREE.Vector3();
+
+    this._buildLights();
+    this._buildModel();
+    this._buildGround();
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+
+  _buildLights() {
+    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    key.position.set(-180, 420, 260);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.6;
+    key.shadow.radius = 6;
+    Object.assign(key.shadow.camera, { left: -170, right: 170, top: 170, bottom: -170, near: 50, far: 1200 });
+    this.scene.add(key);
+    const rim = new THREE.DirectionalLight(0xe6cfb4, 0.7);
+    rim.position.set(260, 120, -320);
+    this.scene.add(rim);
+    this.scene.add(new THREE.HemisphereLight(0xb9aa98, 0x080d12, 0.25));
+    this.keyLight = key;
+  }
+
+  _buildModel() {
+    const d = this.data;
+    const lo = new THREE.Vector3().fromArray(d.assembly_bbox_mm.min);
+    const hi = new THREE.Vector3().fromArray(d.assembly_bbox_mm.max);
+    this.assemblyCenter = lo.clone().add(hi).multiplyScalar(0.5);
+
+    // turntable (world Y) -> display orientation -> assembly frame (mm, IBSimu)
+    this.turntable = new THREE.Group();
+    this.display = new THREE.Group();
+    this.display.rotation.copy(DISPLAY_ROTATION);
+    this.assembly = new THREE.Group();
+    this.assembly.position.copy(this.assemblyCenter).negate();
+    this.display.add(this.assembly);
+    this.turntable.add(this.display);
+    this.scene.add(this.turntable);
+
+    this.parts = {};
+    this.groups = {};
+    this.edgeMaterial = new THREE.LineBasicMaterial({ color: 0x080d12, transparent: true, opacity: 0.38 });
+    for (const part of d.parts) {
+      const geometry = decodePart(part);
+      const look = MATERIALS[part.group] || MATERIALS.ion_source_body;
+      const material = new THREE.MeshStandardMaterial({
+        color: look.color, metalness: 1.0, roughness: look.roughness,
+        envMapIntensity: 1.0, side: THREE.DoubleSide, shadowSide: THREE.BackSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.name = part.key;
+      mesh.userData.part = part;
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 32), this.edgeMaterial);
+      mesh.add(edges);
+      this.assembly.add(mesh);
+      this.parts[part.key] = mesh;
+      (this.groups[part.group] = this.groups[part.group] || []).push(mesh);
+    }
+
+    // Model bounds in world space (turntable rotation does not change the height).
+    this.turntable.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(this.display);
+    this.worldBox = box;
+    this.radius = box.getBoundingSphere(new THREE.Sphere()).radius;
+  }
+
+  _buildGround() {
+    const y = this.worldBox.min.y - 6;
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.ShadowMaterial({ opacity: 0.6 }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = y;
+    shadow.receiveShadow = true;
+    const grid = groundGrid(1200);
+    grid.rotation.x = -Math.PI / 2;
+    grid.position.y = y - 0.05;
+    this.ground = { shadow, grid, y };
+    this.scene.add(grid, shadow);
+  }
+
+  // Bounding box (assembly mm frame) of one or several component groups.
+  groupBox(names) {
+    const box = new THREE.Box3();
+    for (const name of [].concat(names))
+      for (const mesh of this.groups[name] || []) box.union(mesh.geometry.boundingBox);
+    return box;
+  }
+
+  // Assembly-frame point (mm) -> world -> CSS pixels.
+  project(pointAssembly) {
+    const world = this.assembly.localToWorld(pointAssembly.clone());
+    const ndc = world.project(this.camera);
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    return { x: (ndc.x * 0.5 + 0.5) * rect.width, y: (-ndc.y * 0.5 + 0.5) * rect.height, behind: ndc.z > 1 };
+  }
+
+  // Camera on a sphere around the target; distance in units of the fit distance.
+  setOrbit(azimuthDeg, elevationDeg, distanceFactor, target) {
+    const fit = this.fitDistance();
+    const az = THREE.MathUtils.degToRad(azimuthDeg), el = THREE.MathUtils.degToRad(elevationDeg);
+    if (target) this.target.copy(target);
+    const r = fit * distanceFactor;
+    this.camera.position.set(
+      this.target.x + r * Math.cos(el) * Math.sin(az),
+      this.target.y + r * Math.sin(el),
+      this.target.z + r * Math.cos(el) * Math.cos(az));
+    this.camera.lookAt(this.target);
+  }
+
+  fitDistance() {
+    const vfov = THREE.MathUtils.degToRad(this.camera.fov);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect);
+    return this.radius / Math.sin(Math.min(vfov, hfov) / 2);
+  }
+
+  resize() {
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / Math.max(h, 1);
+    this.camera.updateProjectionMatrix();
+  }
+
+  render() { this.renderer.render(this.scene, this.camera); }
+}
+
+IBS.Engine = Engine;
+IBS.ease = {
+  clamp01: (x) => Math.min(Math.max(x, 0), 1),
+  inOutCubic: (x) => { x = Math.min(Math.max(x, 0), 1); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; },
+  outCubic: (x) => { x = Math.min(Math.max(x, 0), 1); return 1 - Math.pow(1 - x, 3); },
+  // 0 before t0, 1 after t1, smooth in between.
+  window: (t, t0, t1) => IBS.ease.inOutCubic((t - t0) / (t1 - t0)),
+  lerp: (a, b, k) => a + (b - a) * k,
+};
+})();

@@ -1,0 +1,449 @@
+{
+  "format": "ibs-presentation-geometry/1",
+  "units": "mm",
+  "frame": "IBSimu assembly frame, beam along +Y",
+  "beam_axis": [
+    0,
+    1,
+    0
+  ],
+  "gap_mm": 20.23,
+  "placement_source": "01_geometry/assembly_geometry.cpp + 02_physics/baseline.json",
+  "groups": {
+    "ion_source_body": {
+      "title": "Корпус ионного источника (ГРК)",
+      "title_en": "Ion Source Body"
+    },
+    "source_diaphragm": {
+      "title": "Диафрагма источника",
+      "title_en": "Source Diaphragm"
+    },
+    "accelerating_diaphragm": {
+      "title": "Ускоряющая диафрагма",
+      "title_en": "Accelerating Diaphragm"
+    },
+    "suppressor_diaphragm": {
+      "title": "Подавляющая диафрагма",
+      "title_en": "Suppressor Diaphragm"
+    },
+    "faraday_cup": {
+      "title": "Цилиндр Фарадея",
+      "title_en": "Faraday Cup"
+    }
+  },
+  "assembly_bbox_mm": {
+    "min": [
+      91.768616,
+      214.80545,
+      -57.330002
+    ],
+    "max": [
+      193.768616,
+      364.43546,
+      54.5
+    ]
+  },
+  "triangles": 50956,
+  "parts": [
+    {
+      "id": 7,
+      "key": "grk_walls",
+      "name": "GRK walls",
+      "group": "ion_source_body",
+      "parametric": false,
+      "source": "GRK/grk_walls.stl",
+      "sha256": "e06ea91ace19283e7d4ce22d9f846aef9b44cf7ff1aa903e0abe8346ea387609",
+      "triangles": 980,
+      "volume_mm3": 18357.4176,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          124.618622,
+          214.80545,
+          -47.900002
+        ],
+        [
+          160.918625,
+          240.80545,
+          34.599998
+        ]
+      ],
+      "quantization_error_mm": 0.0006294346532387274
+    },
+    {
+      "id": 8,
+      "key": "grk_anticathode",
+      "name": "GRK anticathode",
+      "group": "ion_source_body",
+      "parametric": false,
+      "source": "GRK/grk_anticathode.stl",
+      "sha256": "bb78b640b2de2bda1ca04256ebedab166b43f973690fc832f1432aab2f556d10",
+      "triangles": 11600,
+      "volume_mm3": 4621.2638,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          133.269989,
+          218.512512,
+          -57.330002
+        ],
+        [
+          152.265411,
+          237.505356,
+          -27.33
+        ]
+      ],
+      "quantization_error_mm": 0.00022888534300258357
+    },
+    {
+      "id": 9,
+      "key": "grk_cathode",
+      "name": "GRK cathode",
+      "group": "ion_source_body",
+      "parametric": false,
+      "source": "GRK/grk_cathode.stl",
+      "sha256": "ba27eb0e7244410c5017b4521d26f8f044fd4ca127340b4a5cc5bc85681353d3",
+      "triangles": 3074,
+      "volume_mm3": 4043.6222,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          133.070862,
+          218.314423,
+          27.5
+        ],
+        [
+          152.46637,
+          237.705444,
+          54.5
+        ]
+      ],
+      "quantization_error_mm": 0.0002059967956054017
+    },
+    {
+      "id": 10,
+      "key": "source_diaphragm",
+      "name": "GRK diaphragm",
+      "group": "source_diaphragm",
+      "parametric": true,
+      "source": "GRK/grk_diaphragm_original.stl",
+      "sha256": "8cf92910d58031e2d0d42e8b98c62c7f2fc268a861bdd909f27e210b00697576",
+      "triangles": 4208,
+      "volume_mm3": 23541.1658,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          117.268616,
+          241.20546,
+          -54.0
+        ],
+        [
+          168.268616,
+          247.20546,
+          48.0
+        ]
+      ],
+      "quantization_error_mm": 0.0007782101167315176
+    },
+    {
+      "id": 11,
+      "key": "accelerating_diaphragm",
+      "name": "Accelerating diaphragm",
+      "group": "accelerating_diaphragm",
+      "parametric": true,
+      "source": "Extraction Unit/accelerating_diaphragm_original.stl",
+      "sha256": "d5e936620ab8c11b2e62955608b3d40982c18d089c45156f0dae58241bc8dda1",
+      "triangles": 10146,
+      "volume_mm3": 25315.5929,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.14276861572265626
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.3584354595947266
+        ],
+        [
+          -0.001,
+          0.0,
+          0.0,
+          -0.003
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          101.273586,
+          267.43546,
+          -44.498756
+        ],
+        [
+          184.268616,
+          272.43546,
+          38.498756
+        ]
+      ],
+      "quantization_error_mm": 0.0006332304327258931
+    },
+    {
+      "id": 12,
+      "key": "accelerating_shield",
+      "name": "Accelerating diaphragm shield",
+      "group": "accelerating_diaphragm",
+      "parametric": false,
+      "source": "Extraction Unit/accelerating_diaphragm_shield.stl",
+      "sha256": "3baa3c259989975b222b5d92395e53fcb3bc7a3bb4b207e1ef7c858a69a76893",
+      "triangles": 1260,
+      "volume_mm3": 3787.9865,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.14276861572265626
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.3584354595947266
+        ],
+        [
+          -0.001,
+          0.0,
+          0.0,
+          -0.003
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          100.830795,
+          269.43546,
+          -44.448029
+        ],
+        [
+          184.218616,
+          301.43546,
+          38.448029
+        ]
+      ],
+      "quantization_error_mm": 0.0006362082947853037
+    },
+    {
+      "id": 13,
+      "key": "suppressor_diaphragm",
+      "name": "Suppressor diaphragm",
+      "group": "suppressor_diaphragm",
+      "parametric": true,
+      "source": "Extraction Unit/suppressor_diaphragm_original.stl",
+      "sha256": "d397efa9444f8c7a579693aa1a7d32cf7356a862274b765e8afaa7cc29b53a0b",
+      "triangles": 8350,
+      "volume_mm3": 15255.379,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.14276861572265626
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.3584354595947266
+        ],
+        [
+          -0.001,
+          0.0,
+          0.0,
+          -0.003
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          115.2736,
+          283.43546,
+          -30.498755
+        ],
+        [
+          170.268616,
+          291.43546,
+          24.498755
+        ]
+      ],
+      "quantization_error_mm": 0.0004196040970678687
+    },
+    {
+      "id": 14,
+      "key": "faraday_cup",
+      "name": "Faraday cup",
+      "group": "faraday_cup",
+      "parametric": false,
+      "source": "Extraction Unit/prepared/faraday_cup_union.stl",
+      "sha256": "142976a0a60ce26055766a01923b627da8d05c2e94a2ab39be37d34b1a757b05",
+      "triangles": 11338,
+      "volume_mm3": 62407.8042,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.14276861572265626
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.3584354595947266
+        ],
+        [
+          -0.001,
+          0.0,
+          0.0,
+          -0.003
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          91.768616,
+          284.43546,
+          -53.997513
+        ],
+        [
+          193.768616,
+          364.43546,
+          47.997513
+        ]
+      ],
+      "quantization_error_mm": 0.0007782101167315176
+    }
+  ]
+}
