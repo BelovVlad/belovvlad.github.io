@@ -34,10 +34,11 @@ const installation = {
 
   update(t, ctx) {
     const { engine } = ctx;
-    // Lights come up, then the camera settles into a three-quarter view.
-    engine.renderer.toneMappingExposure = lerp(0.0, 1.0, win(t, 0.0, 2.0));
-    engine.ground.grid.material.uniforms.uOpacity.value = win(t, 0.4, 2.4);
-    const k = win(t, 0.0, 5.0);
+    // On first load the lights come up; coming back from another scene they stay on.
+    const intro = !ctx.from;
+    engine.renderer.toneMappingExposure = intro ? lerp(0.0, 1.0, win(t, 0.0, 2.0)) : 1.0;
+    engine.ground.grid.material.uniforms.uOpacity.value = intro ? win(t, 0.4, 2.4) : 1;
+    const k = intro ? win(t, 0.0, 5.0) : 1;
     engine.setOrbit(lerp(-10, 0, k), lerp(38, 22, k), lerp(1.7, 0.96, k),
                     new THREE.Vector3(0, engine.radius * 0.03, 0));
 
@@ -59,9 +60,14 @@ const installation = {
 
 // Scene 2. The beam turns vertical; only the two electrodes whose geometry is
 // varied stay solid, the source and the Faraday cup become see-through. Then the
-// original diaphragms dissolve into their own versions (data/geometry.own.js).
+// original diaphragms dissolve into their own versions (data/geometry.own.js),
+// and the suppressor lifts along the beam to uncover the accelerating diaphragm.
 const ELECTRODES = ['accelerating_diaphragm', 'suppressor_diaphragm'];
 const GHOST_OPACITY = 0.14;
+const SUPPRESSOR_LIFT_MM = 34;
+// Labels point at the plate edge facing the viewer's left / right.
+const LEFT_FRONT = new THREE.Vector3(-1, 0, 0.55);
+const RIGHT_FRONT = new THREE.Vector3(1, 0, 0.55);
 
 const electrodes = {
   id: 'electrodes',
@@ -74,19 +80,18 @@ const electrodes = {
   },
 
   enter(ctx) {
-    const { engine, overlay } = ctx;
-    const center = (key) => engine.partBox(key).getCenter(new THREE.Vector3());
-    overlay.add({
+    const { overlay } = ctx;
+    this.suppressorLabel = overlay.add({
       title: 'Подавляющая диафрагма',
       subtitle: 'изменяемая геометрия',
-      anchor: center('suppressor_diaphragm'),
-      row: 0.38, side: 'right',
+      anchor: new THREE.Vector3(),
+      row: 0.34, side: 'right',
     });
-    overlay.add({
+    this.acceleratingLabel = overlay.add({
       title: 'Ускоряющая диафрагма',
       subtitle: 'изменяемая геометрия',
-      anchor: center('accelerating_diaphragm'),
-      row: 0.64, side: 'left',
+      anchor: new THREE.Vector3(),
+      row: 0.66, side: 'left',
     });
   },
 
@@ -107,15 +112,23 @@ const electrodes = {
       engine.setOwnOpacity(key, base * ownIn);
     }
 
-    // Camera looks slightly down on the stacked plates, so apertures and gaps show.
+    // Next step: the suppressor rises, the camera looks down onto the accelerating plate.
+    const open = win(t, 8.6, 11.0);
+    const lift = SUPPRESSOR_LIFT_MM * open;
+    engine.setLift('suppressor_diaphragm', lift);
+
     const focus = engine.partBox(ELECTRODES).getCenter(new THREE.Vector3());
+    focus.y += lift * 0.5;
     const k = win(t, 0.0, 3.2);
-    engine.setOrbit(0, lerp(22, 28, k), lerp(0.96, 0.8, k),
+    engine.setOrbit(0, lerp(lerp(22, 28, k), 40, open), lerp(lerp(0.96, 0.8, k), 0.74, open),
                     new THREE.Vector3(0, lerp(engine.radius * 0.03, engine.worldY(focus), tilt), 0));
 
     const omega = (2 * Math.PI) / 90, tau = 3.0;
     engine.turntable.rotation.y = THREE.MathUtils.degToRad(-38) + omega * (t - tau * (1 - Math.exp(-t / tau)));
     engine.ground.grid.material.uniforms.uOpacity.value = 1;
+
+    this.acceleratingLabel.anchor = engine.rimPoint('accelerating_diaphragm', LEFT_FRONT, 0.92);
+    this.suppressorLabel.anchor = engine.rimPoint('suppressor_diaphragm', RIGHT_FRONT, 0.92, lift);
 
     ctx.setHeadingOpacity(win(t, 1.6, 2.8));
     return { calloutOpacity: win(t, 2.8, 3.8) };

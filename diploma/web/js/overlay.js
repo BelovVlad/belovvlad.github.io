@@ -62,12 +62,23 @@ class Overlay {
     this.layer = root.querySelector('.callouts');
     this.svg = root.querySelector('svg.leaders');
     this.callouts = [];
+    this.leaving = [];
   }
   add(options) { const c = new Callout(this.layer, this.svg, options); this.callouts.push(c); return c; }
-  clear() { this.callouts.forEach((c) => c.remove()); this.callouts = []; }
+  // Labels of the previous scene fade out instead of vanishing.
+  clear() {
+    for (const c of this.callouts) { c.fade = parseFloat(c.el.style.opacity) || 0; this.leaving.push(c); }
+    this.callouts = [];
+  }
   update(engine, opacity, dt) {
     const center = engine.project(engine.assembly.worldToLocal(new THREE.Vector3()));
     this.callouts.forEach((c) => c.update(engine, center.x, opacity, dt));
+    this.leaving = this.leaving.filter((c) => {
+      c.fade = Math.max(0, c.fade - dt * 2.5);
+      for (const el of [c.el, c.line, c.dot]) el.style.opacity = String(c.fade);
+      if (c.fade === 0) c.remove();
+      return c.fade > 0;
+    });
   }
 }
 

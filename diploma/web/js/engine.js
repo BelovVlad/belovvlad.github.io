@@ -178,7 +178,8 @@ class Engine {
         new THREE.LineBasicMaterial({ color: EDGE_SOLID, transparent: true, opacity: 0.38 }));
       mesh.add(edges);
       mesh.userData.edges = edges;
-      mesh.userData.opacity = 1;
+      mesh.userData.opacity = mesh.userData.target = 1;
+      mesh.userData.lift = 0;
       this.assembly.add(mesh);
       if (isOwn) { this.own[part.key] = mesh; this._setMeshOpacity(mesh, 0); continue; }
       this.parts[part.key] = mesh;
@@ -211,6 +212,7 @@ class Engine {
     this.turntable.rotation.set(0, 0, 0);
     for (const key in this.parts) this.setOpacity(key, 1);
     for (const key in this.own) this.setOwnOpacity(key, 0);
+    for (const key in this.parts) this.setLift(key, 0);
     this.ground.grid.material.uniforms.uOpacity.value = 1;
     this.ground.shadow.material.opacity = 0.6;
   }
@@ -218,6 +220,12 @@ class Engine {
   // Beam direction on screen: 0 = horizontal (scene 1), 1 = vertical, pointing up.
   // The ground follows the lowest corner of the assembly box.
   setBeamTilt(k) {
+    this.tilt = k;
+    this._applyTilt(k);
+  }
+
+  _applyTilt(k) {
+    this.tiltShown = k;
     this.display.rotation.set(0, 0, DISPLAY_ROTATION.z * (1 - k));
     this.turntable.updateMatrixWorld(true);
     const lo = new THREE.Vector3().fromArray(this.data.assembly_bbox_mm.min);
@@ -237,6 +245,11 @@ class Engine {
   setOwnOpacity(key, alpha) { if (this.own[key]) this._setMeshOpacity(this.own[key], alpha); }
 
   _setMeshOpacity(mesh, alpha) {
+    mesh.userData.target = alpha;
+    this._applyOpacity(mesh, alpha);
+  }
+
+  _applyOpacity(mesh, alpha) {
     if (mesh.userData.opacity === alpha) return;
     mesh.visible = alpha > 0;
     const ghost = alpha < 1, material = mesh.material;
@@ -249,6 +262,41 @@ class Engine {
     edges.color.copy(EDGE_SOLID).lerp(EDGE_GHOST, Math.min((1 - alpha) * 1.5, 1));
     edges.opacity = ghost ? 0.12 + 0.2 * alpha : 0.38;
     mesh.userData.opacity = alpha;
+  }
+
+  // Every mesh, original and own: used to carry a look from one scene into the next.
+  meshes() { return Object.values(this.parts).concat(Object.values(this.own)); }
+
+  // What is on screen now (opacity, lift, beam tilt), to blend scenes.
+  look() {
+    return { tilt: this.tiltShown, meshes: new Map(this.meshes().map((m) => [m, { opacity: m.userData.opacity, lift: m.position.y }])) };
+  }
+
+  // Show a mix of a previous look (k = 0) and the values the scene asked for (k = 1).
+  blendLook(from, k) {
+    this._applyTilt(from.tilt + (this.tilt - from.tilt) * k);
+    for (const [mesh, old] of from.meshes) {
+      this._applyOpacity(mesh, old.opacity + (mesh.userData.target - old.opacity) * k);
+      mesh.position.y = old.lift + (mesh.userData.lift - old.lift) * k;
+    }
+  }
+
+  // Shift a part (and its own variant) along the beam, mm; used for exploded views.
+  setLift(key, mm) {
+    for (const mesh of [this.parts[key], this.own[key]]) if (mesh) mesh.position.y = mesh.userData.lift = mm;
+  }
+
+  // Assembly-frame point on the rim of a plate (beam along assembly Y) that faces
+  // the given world direction; keeps a label anchor visible while the model turns.
+  rimPoint(keys, worldDir, fraction = 0.9, lift = 0) {
+    const box = this.partBox(keys);
+    this.turntable.updateMatrixWorld(true);
+    const inverse = this.assembly.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const dir = worldDir.clone().applyQuaternion(inverse).setY(0).normalize();
+    const radius = 0.5 * Math.min(box.max.x - box.min.x, box.max.z - box.min.z) * fraction;
+    const point = box.getCenter(new THREE.Vector3()).addScaledVector(dir, radius);
+    point.y = box.max.y + lift;
+    return point;
   }
 
   // Bounding box (assembly mm frame) of individual parts.

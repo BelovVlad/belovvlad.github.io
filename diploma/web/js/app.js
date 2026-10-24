@@ -24,28 +24,46 @@ function start() {
   const overlay = new IBS.Overlay($('#stage'));
   const params = new URLSearchParams(location.search);
 
+  // Text blocks: the scene sets its opacity each frame; text of the previous
+  // scene fades out over TEXT_FADE seconds instead of vanishing.
+  const TEXT_FADE = 0.7, CAMERA_BLEND = 2.4;
+  const texts = { title: $('#title'), credits: $('#credits'), heading: $('#heading') };
+  const shown = { title: 0, credits: 0, heading: 0 };
+  const leaving = { title: 0, credits: 0, heading: 0 };
+  let pendingHeading = null;
+
   const ctx = {
     engine, overlay, data,
-    setTitleOpacity: (a) => { $('#title').style.opacity = a; },
-    setCreditsOpacity: (a) => { $('#credits').style.opacity = a; },
-    setHeadingOpacity: (a) => { $('#heading').style.opacity = a; },
+    setTitleOpacity: (a) => { shown.title = a; },
+    setCreditsOpacity: (a) => { shown.credits = a; },
+    setHeadingOpacity: (a) => { shown.heading = a; },
   };
 
-  const state = { index: 0, t: 0, playing: true };
+  const state = { index: 0, t: 0, playing: true, from: null };
 
-  function enterScene(index) {
+  // Where the model and camera are right now: the next scene starts from here.
+  function snapshot() {
+    return { turn: engine.turntable.rotation.y, camera: engine.camera.position.clone(), target: engine.target.clone(),
+             exposure: engine.renderer.toneMappingExposure, look: engine.look() };
+  }
+
+  function setHeading(heading) {
+    $('#heading .eyebrow').textContent = heading.eyebrow || '';
+    $('#heading h2').textContent = heading.title || '';
+    $('#heading p').textContent = heading.text || '';
+  }
+
+  function enterScene(index, first = false) {
+    state.from = first ? null : snapshot();
     overlay.clear();
-    $('#credits').style.opacity = 0;
-    $('#title').style.opacity = 0;
-    $('#heading').style.opacity = 0;
+    for (const name in texts) leaving[name] = parseFloat(texts[name].style.opacity) || 0;
     engine.reset();
     state.index = Math.min(Math.max(index, 0), IBS.scenes.length - 1);
     state.t = 0;
     const scene = IBS.scenes[state.index];
-    const heading = scene.heading || {};
-    $('#heading .eyebrow').textContent = heading.eyebrow || '';
-    $('#heading h2').textContent = heading.title || '';
-    $('#heading p').textContent = heading.text || '';
+    // A new heading text waits until the old one has faded out.
+    pendingHeading = scene.heading || {};
+    if (leaving.heading === 0) { setHeading(pendingHeading); pendingHeading = null; }
     scene.enter(ctx);
     $('#scene-label').textContent = `${scene.number} · ${scene.title}`;
     $('#scene-count').textContent = `${state.index + 1} / ${IBS.scenes.length}`;
@@ -63,7 +81,7 @@ function start() {
     next: () => enterScene(state.index + 1),
     prev: () => enterScene(state.index - 1),
     play: () => setPlaying(!state.playing),
-    restart: () => { state.t = 0; setPlaying(true); },
+    restart: () => { state.from = snapshot(); state.t = 0; setPlaying(true); },
     fullscreen: () => {
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen().catch(() => {});
@@ -94,16 +112,42 @@ function start() {
   window.addEventListener('mousemove', wake);
   wake();
 
-  enterScene((parseInt(params.get('scene'), 10) || 1) - 1);
+  enterScene((parseInt(params.get('scene'), 10) || 1) - 1, true);
   if (params.has('t')) state.t = parseFloat(params.get('t')) || 0;
   if (params.has('paused')) setPlaying(false);
+
+  // Camera, turntable, exposure and part looks glide from where the previous scene left them.
+  function blendFromPrevious(t) {
+    const from = state.from;
+    if (!from) return;
+    const k = IBS.ease.window(t, 0, CAMERA_BLEND);
+    engine.blendLook(from.look, k);
+    if (k >= 1) return;
+    const turn = engine.turntable.rotation.y;
+    const delta = Math.atan2(Math.sin(turn - from.turn), Math.cos(turn - from.turn));
+    engine.turntable.rotation.y = turn - delta * (1 - k);
+    engine.target.lerpVectors(from.target, engine.target, k);
+    engine.camera.position.lerpVectors(from.camera, engine.camera.position, k);
+    engine.camera.lookAt(engine.target);
+    engine.renderer.toneMappingExposure += (from.exposure - engine.renderer.toneMappingExposure) * (1 - k);
+  }
 
   let last = performance.now();
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
     if (state.playing) state.t += dt;
-    const result = IBS.scenes[state.index].update(state.t, ctx) || {};
+    const scene = IBS.scenes[state.index];
+    for (const name in shown) shown[name] = 0;
+    ctx.from = state.from;
+    const result = scene.update(state.t, ctx) || {};
+    blendFromPrevious(state.t);
+    const fade = 1 - IBS.ease.window(state.t, 0, TEXT_FADE);
+    if (pendingHeading && fade === 0) { setHeading(pendingHeading); pendingHeading = null; }
+    for (const name in texts) {
+      const old = leaving[name] * fade;
+      texts[name].style.opacity = name === 'heading' && pendingHeading ? old : Math.max(shown[name], old);
+    }
     engine.render();
     overlay.update(engine, result.calloutOpacity ?? 1, params.has('paused') ? 1 : dt);
     requestAnimationFrame(frame);
