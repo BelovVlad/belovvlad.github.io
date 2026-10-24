@@ -45,7 +45,7 @@ kbd{font:10px ui-sans-serif,system-ui,sans-serif;white-space:nowrap;color:var(--
 .settings-trigger .icon{width:21px;height:21px;stroke-width:1.5}
 main{width:min(100%,1256px);margin:0 auto;padding:32px 28px 0;min-height:calc(100dvh - 80px);display:flex;flex-direction:column}
 .welcome{position:relative;isolation:isolate;min-height:229px;overflow:hidden;border:1px solid var(--line);border-radius:14px;padding:36px 38px;display:flex;align-items:center;justify-content:space-between;gap:20px;color:#f1ede7}
-.hero-art{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(90deg,rgba(8,13,18,.91),rgba(8,13,18,.63) 38%,rgba(8,13,18,.06) 76%),linear-gradient(0deg,rgba(8,13,18,.55),transparent 70%),url('./assets/eva-hero.webp');background-size:cover;background-position:center 70%}
+.hero-art{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(90deg,rgba(8,13,18,.35),rgba(8,13,18,.08) 45%,transparent 80%),linear-gradient(0deg,rgba(8,13,18,.32),transparent 60%),url('./assets/particles-hero.webp');background-size:cover;background-position:center 52%}
 .welcome h1{font-size:38px;font-weight:550;letter-spacing:-.045em;line-height:1.13;margin:0 0 17px}
 .welcome h1 span{color:#ead4b7}
 .welcome p{font-size:12px;color:#c9c2b9;margin:0}
@@ -200,7 +200,7 @@ dialog form>.checkbox-label{flex-direction:row;align-items:center;gap:9px;min-he
   main{padding:19px 18px 0;min-height:calc(100dvh - 118px)}
   .welcome{min-height:208px;padding:27px 25px;border-radius:11px;align-items:flex-start}
   .welcome h1{font-size:31px;margin-bottom:14px}.welcome p{font-size:10px}
-  .hero-art{background-position:70% 70%;background-image:linear-gradient(90deg,rgba(8,13,18,.9),rgba(8,13,18,.48) 72%,rgba(8,13,18,.04)),linear-gradient(0deg,rgba(8,13,18,.63),transparent 80%),url('./assets/eva-hero.webp')}
+  .hero-art{background-position:70% 52%;background-image:linear-gradient(90deg,rgba(8,13,18,.82),rgba(8,13,18,.48) 60%,rgba(8,13,18,.08)),linear-gradient(0deg,rgba(8,13,18,.45),transparent 80%),url('./assets/particles-hero.webp')}
   .welcome-date{position:absolute;right:16px;bottom:15px;gap:4px}#hero-time{font-size:18px}#top-date{font-size:7px}
   .library{margin-top:27px}.library-heading h2{font-size:18px}.library-actions{gap:10px}
   .view-toggle{gap:0}.view-toggle .icon-button{width:27px;height:30px}.view-toggle .icon{width:13px;height:13px}
