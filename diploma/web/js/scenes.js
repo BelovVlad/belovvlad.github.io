@@ -102,14 +102,15 @@ const electrodes = {
     engine.setBeamTilt(tilt);
 
     const ghost = lerp(1, GHOST_OPACITY, win(t, 0.4, 2.4));
-    // Own part appears under the original first, then the original dissolves:
-    // no washed-out moment where both are half transparent.
-    const ownIn = win(t, 5.0, 6.4), origOut = win(t, 5.8, 7.6);
+    // Original -> own: a cut sweeps across each plate, the own part is left
+    // behind it; nothing is half transparent on the way.
+    const swap = win(t, 5.0, 7.6);
     for (const key in engine.parts) {
       const base = ELECTRODES.includes(key) ? 1 : ghost;
       const own = key in engine.own;
-      engine.setOpacity(key, own ? base * (1 - origOut) : base);
-      engine.setOwnOpacity(key, base * ownIn);
+      engine.setOpacity(key, own && swap >= 1 ? 0 : base);
+      engine.setOwnOpacity(key, swap > 0 ? base : 0);
+      if (own) engine.setSwap(key, swap);
     }
 
     // Next step: the suppressor rises, the camera looks down onto the accelerating plate.
@@ -135,5 +136,56 @@ const electrodes = {
   },
 };
 
-IBS.scenes = [installation, electrodes];
+// Scene 3. The source (GRK) diaphragm turns solid too: all three varied
+// electrodes, in their own geometry, at their real places along the beam.
+const ALL_ELECTRODES = ['source_diaphragm', ...ELECTRODES];
+
+const sourceDiaphragm = {
+  id: 'source-diaphragm',
+  number: '03',
+  title: 'Диафрагма источника',
+  heading: {
+    eyebrow: 'Параметризация',
+    title: 'Диафрагма источника',
+    text: 'Диафрагма газоразрядной камеры — третий изменяемый электрод',
+  },
+
+  enter(ctx) {
+    const { overlay } = ctx;
+    this.labels = [
+      [overlay.add({ title: 'Подавляющая диафрагма', anchor: new THREE.Vector3(), row: 0.30, side: 'right' }),
+       'suppressor_diaphragm', RIGHT_FRONT],
+      [overlay.add({ title: 'Ускоряющая диафрагма', anchor: new THREE.Vector3(), row: 0.46, side: 'left' }),
+       'accelerating_diaphragm', LEFT_FRONT],
+      [overlay.add({ title: 'Диафрагма источника', subtitle: 'изменяемая геометрия', anchor: new THREE.Vector3(), row: 0.66, side: 'right' }),
+       'source_diaphragm', RIGHT_FRONT],
+    ];
+  },
+
+  update(t, ctx) {
+    const { engine } = ctx;
+    engine.renderer.toneMappingExposure = 1.3;
+    engine.setBeamTilt(1);
+    for (const key in engine.parts) {
+      const solid = ALL_ELECTRODES.includes(key);
+      const base = solid ? 1 : GHOST_OPACITY;
+      engine.setOpacity(key, key in engine.own ? 0 : base);
+      engine.setOwnOpacity(key, base);
+    }
+
+    // Lower view, so the gap between the source and the accelerating plate shows.
+    const focus = engine.partBox(ALL_ELECTRODES).getCenter(new THREE.Vector3());
+    engine.setOrbit(0, 16, 0.78, new THREE.Vector3(0, engine.worldY(focus), 0));
+    const omega = (2 * Math.PI) / 90, tau = 3.0;
+    engine.turntable.rotation.y = THREE.MathUtils.degToRad(-38) + omega * (t - tau * (1 - Math.exp(-t / tau)));
+    engine.ground.grid.material.uniforms.uOpacity.value = 1;
+
+    for (const [label, key, dir] of this.labels) label.anchor = engine.rimPoint(key, dir, 0.92);
+
+    ctx.setHeadingOpacity(win(t, 0.8, 2.0));
+    return { calloutOpacity: win(t, 2.0, 3.0) };
+  },
+};
+
+IBS.scenes = [installation, electrodes, sourceDiaphragm];
 })();

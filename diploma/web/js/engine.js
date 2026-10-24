@@ -110,6 +110,7 @@ class Engine {
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.localClippingEnabled = true;   // wipe from an original part to its own variant
     container.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
@@ -213,6 +214,7 @@ class Engine {
     for (const key in this.parts) this.setOpacity(key, 1);
     for (const key in this.own) this.setOwnOpacity(key, 0);
     for (const key in this.parts) this.setLift(key, 0);
+    for (const key in this.own) this.setSwap(key, null);
     this.ground.grid.material.uniforms.uOpacity.value = 1;
     this.ground.shadow.material.opacity = 0.6;
   }
@@ -255,12 +257,14 @@ class Engine {
     const ghost = alpha < 1, material = mesh.material;
     if (material.transparent !== ghost) material.needsUpdate = true;
     material.transparent = ghost;
-    material.depthWrite = !ghost;
+    // Depth stays on, so a part never shows its own inner and back faces: going
+    // from 1 to 0.99 looks the same, and the fade has no visible jump. The shadow
+    // stays too, for the same reason.
+    material.depthWrite = true;
     material.opacity = alpha;
-    mesh.castShadow = !ghost;
     const edges = mesh.userData.edges.material;
     edges.color.copy(EDGE_SOLID).lerp(EDGE_GHOST, Math.min((1 - alpha) * 1.5, 1));
-    edges.opacity = ghost ? 0.12 + 0.2 * alpha : 0.38;
+    edges.opacity = 0.12 + 0.26 * alpha;
     mesh.userData.opacity = alpha;
   }
 
@@ -278,6 +282,34 @@ class Engine {
     for (const [mesh, old] of from.meshes) {
       this._applyOpacity(mesh, old.opacity + (mesh.userData.target - old.opacity) * k);
       mesh.position.y = old.lift + (mesh.userData.lift - old.lift) * k;
+    }
+  }
+
+  // Wipe from the original part to its own variant: a plane sweeps across the
+  // plate (assembly X), the original stays on one side, the own part on the other.
+  // s = 0: only the original, 1: only the own part; null removes the cut.
+  setSwap(key, s) {
+    const original = this.parts[key], own = this.own[key];
+    if (!original || !own) return;
+    if (s === null) {
+      for (const mesh of [original, own]) this._clip(mesh, null);
+      return;
+    }
+    const box = this.partBox(key);
+    const x = box.min.x - 1 + (box.max.x - box.min.x + 2) * s;
+    this.turntable.updateMatrixWorld(true);
+    const normal = new THREE.Vector3(1, 0, 0).applyQuaternion(this.assembly.getWorldQuaternion(new THREE.Quaternion()));
+    const point = this.assembly.localToWorld(new THREE.Vector3(x, 0, 0));
+    this._clip(original, new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point));
+    this._clip(own, new THREE.Plane().setFromNormalAndCoplanarPoint(normal.clone().negate(), point));
+  }
+
+  _clip(mesh, plane) {
+    const planes = plane ? [plane] : null;
+    for (const material of [mesh.material, mesh.userData.edges.material]) {
+      if (!!material.clippingPlanes !== !!planes) material.needsUpdate = true;
+      material.clippingPlanes = planes;
+      material.clipShadows = true;
     }
   }
 
