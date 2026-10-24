@@ -86,7 +86,7 @@ test('existing browser collections migrate once without losing personal links or
   await expect(page.locator('body')).not.toContainText('DarkNotes');
   await expect(libraryCard(page,'my-link')).toBeVisible();
   const stored=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),storageKey);
-  expect(stored.revision).toBe(3);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
+  expect(stored.revision).toBe(4);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
   await page.reload();await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
 });
 

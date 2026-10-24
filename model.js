@@ -1,4 +1,4 @@
-import { CURRENT_REVISION, DIPLOMA_CATEGORY, DIPLOMA_RESOURCES } from './config.js';
+import { CURRENT_REVISION, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_RESOURCES } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -27,7 +27,7 @@ export function validateConfig(value) {
     todoIds.add(t.id);
     return { id:t.id, text:t.text, done:t.done === true };
   });
-  return { version: 1, revision: [2,3].includes(value.revision) ? value.revision : 1, categories, resources, settings: { theme: ['dark', 'light', 'system'].includes(settings.theme) ? settings.theme : 'dark', view: settings.view === 'list' ? 'list' : 'grid', newTab: settings.newTab !== false, showTasks: settings.showTasks === true }, todos };
+  return { version: 1, revision: [2,3,4].includes(value.revision) ? value.revision : 1, categories, resources, settings: { theme: ['dark', 'light', 'system'].includes(settings.theme) ? settings.theme : 'dark', view: settings.view === 'list' ? 'list' : 'grid', newTab: settings.newTab !== false, showTasks: settings.showTasks === true }, todos };
 }
 
 // Apply additive updates once, preserving user-created links, edits and tasks.
@@ -43,6 +43,7 @@ export function migrateConfig(config) {
       if (!resources.some(r => r.id === seed.id || (r.category === categoryId && r.url === seed.url))) resources.push({...seed,category:categoryId});
     }
   }
+  if (config.revision < 4) resources = resources.map(r => DIPLOMA_MOVED[r.url] ? {...r,url:DIPLOMA_MOVED[r.url]} : r);
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }
 

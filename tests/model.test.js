@@ -52,7 +52,7 @@ test('old collections retire only the abandoned seed and preserve custom data', 
   assert.equal(migrated.resources.some(r=>r.id==='darknotes'),false);
   assert.equal(migrated.resources.some(r=>r.id==='custom'),true);
   assert.deepEqual(migrated.todos,old.todos);
-  assert.equal(migrated.revision,3);
+  assert.equal(migrated.revision,4);
   assert.equal(migrateConfig(migrated),migrated);
   old.resources.find(r=>r.id==='darknotes').url='https://example.com/renamed';
   assert.equal(migrateConfig(validateConfig(old)).resources.some(r=>r.id==='darknotes'),true);
@@ -70,4 +70,16 @@ test('revision 2 collections gain Diploma without overwriting personal data or d
   const existing=clone(old);existing.categories.push({id:'my-diploma',name:'Диплом',description:'Мой раздел',icon:'folder'});
   const reused=migrateConfig(existing);assert.equal(reused.categories.filter(c=>c.name==='Диплом').length,1);
   assert.equal(reused.resources.filter(r=>r.category==='my-diploma').length,2);
+});
+
+test('revision 3 Diploma cards move from Sites to GitHub Pages and keep personal edits',()=>{
+  const old=clone(defaults);old.revision=3;
+  const card=old.resources.find(r=>r.id==='diploma-presentation');card.url='https://pweb-diploma.swoonybard26.chatgpt.site/web/';card.title='Моя презентация';
+  old.resources.find(r=>r.id==='diploma-materials').url='https://pweb-diploma.swoonybard26.chatgpt.site/';
+  const next=migrateConfig(validateConfig(old));
+  assert.equal(next.revision,4);
+  assert.equal(next.resources.find(r=>r.id==='diploma-presentation').url,'https://belovvlad.github.io/diploma/web/');
+  assert.equal(next.resources.find(r=>r.id==='diploma-presentation').title,'Моя презентация');
+  assert.equal(next.resources.find(r=>r.id==='diploma-materials').url,'https://belovvlad.github.io/diploma/');
+  assert.equal(next.resources.some(r=>r.url.includes('chatgpt.site')),false);
 });
