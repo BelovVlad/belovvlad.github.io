@@ -21,7 +21,7 @@ test.beforeEach(async ({page}) => { await page.goto('/'); });
 
 test('real links, draft, search, empty category and keyboard shortcut',async ({page}) => {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await expect(page.locator('#resources .resource-card')).toHaveCount(3);
+  await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   await expect(libraryCard(page,'nsu-s1').locator('a')).toHaveAttribute('href',defaults.resources[0].url);
   await expect(libraryCard(page,'nsu-s2').locator('a')).toHaveCount(0);
   await page.keyboard.press('Control+k'); await expect(page.locator('#search')).toBeFocused();
@@ -29,7 +29,7 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await page.locator('#search').fill('Education');await expect(page.locator('#resources .resource-card')).toHaveCount(2);
   await page.locator('#search').fill('Personal');await expect(page.locator('[data-category-section=personal]')).toBeVisible();
   await page.locator('#search').fill('неизвестный ресурс');await expect(page.getByText('Ничего не нашлось')).toBeVisible();
-  await page.getByRole('button',{name:'Сбросить поиск'}).click();await expect(page.locator('#resources .resource-card')).toHaveCount(3);
+  await page.getByRole('button',{name:'Сбросить поиск'}).click();await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   expect(errors).toEqual([]);
 });
 
@@ -68,7 +68,7 @@ test('category management and moving cards between categories',async ({page}) =>
 
 test('quiet home has one card per resource and no abandoned project or profile',async ({page}) => {
   const ids=await page.locator('.resource-card').evaluateAll(cards=>cards.map(c=>c.dataset.id));
-  expect(ids.length).toBe(3);expect(new Set(ids).size).toBe(ids.length);
+  expect(ids.length).toBe(defaults.resources.length);expect(new Set(ids).size).toBe(ids.length);
   await expect(page.locator('body')).not.toContainText('DarkNotes');
   await expect(page.locator('body')).not.toContainText('Влад');
   await expect(page.locator('.profile,.quiet-note,#quick-links,#favorites-section')).toHaveCount(0);
@@ -82,12 +82,12 @@ test('existing browser collections migrate once without losing personal links or
   old.resources.push({id:'my-link',title:'Личная ссылка',description:'',url:'https://example.com/',category:'projects',icon:'code',favorite:true});
   old.todos.push({id:'existing-task',text:'Старая задача',done:true});
   await page.evaluate(([key,value])=>localStorage.setItem(key,JSON.stringify(value)),[storageKey,old]);await page.reload();
-  await expect(page.locator('.resource-card')).toHaveCount(4);
+  await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
   await expect(page.locator('body')).not.toContainText('DarkNotes');
   await expect(libraryCard(page,'my-link')).toBeVisible();
   const stored=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),storageKey);
-  expect(stored.revision).toBe(2);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
-  await page.reload();await expect(page.locator('.resource-card')).toHaveCount(4);
+  expect(stored.revision).toBe(3);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
+  await page.reload();await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
 });
 
 test('settings tabs support keyboard navigation and fit narrow screens',async ({page}) => {
@@ -100,12 +100,23 @@ test('settings tabs support keyboard navigation and fit narrow screens',async ({
   await page.locator('#theme-select').selectOption('light');await page.screenshot({path:'test-results/settings-320-light.png'});
 });
 
+test('Diploma is added to an existing collection and links to materials and presentation',async ({page})=>{
+  const old=structuredClone(defaults);old.revision=2;
+  old.categories=old.categories.filter(c=>c.id!=='diploma');old.resources=old.resources.filter(r=>r.category!=='diploma');
+  await page.evaluate(([key,value])=>localStorage.setItem(key,JSON.stringify(value)),[storageKey,old]);await page.reload();
+  await page.locator('#navigation [data-category=diploma]').click();
+  await expect(page.locator('.resource-card')).toHaveCount(2);
+  await expect(libraryCard(page,'diploma-materials').locator('a')).toHaveAttribute('href',defaults.resources.find(r=>r.id==='diploma-materials').url);
+  await expect(libraryCard(page,'diploma-presentation').locator('a')).toHaveAttribute('href',defaults.resources.find(r=>r.id==='diploma-presentation').url);
+  await page.reload();await page.locator('#navigation [data-category=diploma]').click();await expect(page.locator('.resource-card')).toHaveCount(2);
+});
+
 test('JSON export and confirmed import preserve collection and tasks',async ({page}) => {
   await enableTasks(page); await page.locator('#todo-form input').fill('Проверить конспект');await page.getByRole('button',{name:'Добавить задачу',exact:true}).click();
   await settings(page,'Резервная копия');
   const downloading=page.waitForEvent('download');await page.locator('#export-config').click();const download=await downloading;
   const fs=await import('node:fs/promises');const backup=JSON.parse(await fs.readFile(await download.path(),'utf8'));
-  expect(backup.todos[0].text).toBe('Проверить конспект');expect(backup.resources.length).toBe(3);
+  expect(backup.todos[0].text).toBe('Проверить конспект');expect(backup.resources.length).toBe(defaults.resources.length);
   backup.resources[0].title='Импортированный семестр';
   await page.locator('#import-file').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
   await expect(page.locator('#confirm-dialog')).toBeVisible();

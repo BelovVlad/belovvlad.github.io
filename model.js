@@ -1,3 +1,4 @@
+import { CURRENT_REVISION, DIPLOMA_CATEGORY, DIPLOMA_RESOURCES } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -26,13 +27,23 @@ export function validateConfig(value) {
     todoIds.add(t.id);
     return { id:t.id, text:t.text, done:t.done === true };
   });
-  return { version: 1, revision: value.revision === 2 ? 2 : 1, categories, resources, settings: { theme: ['dark', 'light', 'system'].includes(settings.theme) ? settings.theme : 'dark', view: settings.view === 'list' ? 'list' : 'grid', newTab: settings.newTab !== false, showTasks: settings.showTasks === true }, todos };
+  return { version: 1, revision: [2,3].includes(value.revision) ? value.revision : 1, categories, resources, settings: { theme: ['dark', 'light', 'system'].includes(settings.theme) ? settings.theme : 'dark', view: settings.view === 'list' ? 'list' : 'grid', newTab: settings.newTab !== false, showTasks: settings.showTasks === true }, todos };
 }
 
-// Retire the original seed once, preserving user-created links, edits and tasks.
+// Apply additive updates once, preserving user-created links, edits and tasks.
 export function migrateConfig(config) {
-  if (config.revision >= 2) return config;
-  return { ...config, revision: 2, resources: config.resources.filter(r => !(r.id === 'darknotes' && r.url === 'https://belovvlad.github.io/DarkNotes/')) };
+  if (config.revision >= CURRENT_REVISION) return config;
+  let resources = config.revision < 2 ? config.resources.filter(r => !(r.id === 'darknotes' && r.url === 'https://belovvlad.github.io/DarkNotes/')) : [...config.resources];
+  let categories = config.categories;
+  if (config.revision < 3) {
+    const category = categories.find(c => c.id === DIPLOMA_CATEGORY.id) || categories.find(c => c.name.trim().toLocaleLowerCase('ru') === 'диплом');
+    const categoryId = category?.id || DIPLOMA_CATEGORY.id;
+    if (!category) categories = [...categories,{...DIPLOMA_CATEGORY}];
+    for (const seed of DIPLOMA_RESOURCES) {
+      if (!resources.some(r => r.id === seed.id || (r.category === categoryId && r.url === seed.url))) resources.push({...seed,category:categoryId});
+    }
+  }
+  return { ...config, revision:CURRENT_REVISION, categories, resources };
 }
 
 export function safeUrl(value) {

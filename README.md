@@ -68,7 +68,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-6 модульных и 15 браузерных проверок покрывают миграцию старой коллекции, отсутствие дублей и профиля, клавиатурные вкладки настроек, CRUD, разделы, порядок, избранное, сохранение, поиск, JSON, защиту повреждённых данных, задачи, темы и размеры 375/820/1024/1440 px. Для установленного браузера можно передать `PWEB_BROWSER` — полный путь к исполняемому файлу Chromium. Реальные iPhone/iPad не заменяются эмуляцией.
+7 модульных и 16 браузерных проверок покрывают миграцию старой коллекции, отсутствие дублей и профиля, клавиатурные вкладки настроек, CRUD, разделы, порядок, избранное, сохранение, поиск, JSON, защиту повреждённых данных, задачи, темы и размеры 375/820/1024/1440 px. Для установленного браузера можно передать `PWEB_BROWSER` — полный путь к исполняемому файлу Chromium. Реальные iPhone/iPad не заменяются эмуляцией.
 
 ## GitHub Pages
 
@@ -87,3 +87,9 @@ git push
 Изучены [Tabliss](https://tabliss.io/), [Start.me](https://start.me/) и [Raindrop](https://raindrop.io/). Для небольшой личной коллекции выбран один каталог: закрепление меняет порядок карточек, а фильтры меняют содержимое той же области. Нет повторного блока избранного, быстрых ссылок, демонстрационных задач или приветствий. Это решение для текущего размера коллекции, а не копия одного из сервисов. Исходная палитра сохранена, баннер заменён на композицию с частицами по просьбе пользователя. Настройки разделены на три вкладки с ровными строками управления и клавиатурной навигацией.
 
 Промпт подготовки баннера (встроенный ImageGen, редактирование изображения): «Edit the supplied image for direct use as a website hero banner. Preserve the supplied particle-collision image extremely faithfully: identical composition, same dark black/navy background, dense red and ice-blue particle tracks and circular detector geometry, bright red-white collision point at approximately 70% width and 52% height. Keep the left half sparse and dark, as in the supplied image. Maintain the wide 3:1 aspect ratio and full image framing. No typography, no interface, no logos, no extra objects. Do not redesign, stylize, add decorative elements, or change the subject or color palette. Produce the clean full-width banner asset.»
+
+## Диплом
+
+Папка `PweB/Diploma` — отдельный проект с приватным GitHub-репозиторием `BelovVlad/Diploma`. Публичные PDF и существующая 3D-презентация размещаются через Sites: https://pweb-diploma.swoonybard26.chatgpt.site/. Презентация открывается в `/web/`. В хабе для них две карточки в разделе «Диплом». Миграция `revision: 3` добавляет раздел и карточки в уже сохранённую коллекцию без сброса пользовательских ссылок; одноимённый пользовательский раздел используется повторно.
+
+PDF добавляются в папку `Diploma` или её подпапки. Индекс обновляется при сборке и публикации Diploma. Инструкции по названиям, описаниям и локальному просмотру находятся в `Diploma/README.md`. Публичный сайт не содержит Python-скрипты и Jupyter-блокнот.

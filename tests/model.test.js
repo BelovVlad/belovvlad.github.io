@@ -38,7 +38,7 @@ test('imports normalize optional settings and remove unknown properties', () => 
 test('reordering swaps category peers even if other categories are interleaved', () => {
   const config = clone(defaults); config.resources.splice(1,0,config.resources.splice(2,1)[0]);
   assert.equal(moveResource(config,'nsu-s1',1),true);
-  assert.deepEqual(config.resources.map(r => r.id),['nsu-s2','github','nsu-s1']);
+  assert.deepEqual(config.resources.map(r => r.id),['nsu-s2','diploma-materials','nsu-s1','diploma-presentation','github']);
   assert.equal(moveResource(config,'nsu-s1',1),false);
   assert.equal(moveResource(config,'missing',1),false);
 });
@@ -52,8 +52,22 @@ test('old collections retire only the abandoned seed and preserve custom data', 
   assert.equal(migrated.resources.some(r=>r.id==='darknotes'),false);
   assert.equal(migrated.resources.some(r=>r.id==='custom'),true);
   assert.deepEqual(migrated.todos,old.todos);
-  assert.equal(migrated.revision,2);
+  assert.equal(migrated.revision,3);
   assert.equal(migrateConfig(migrated),migrated);
   old.resources.find(r=>r.id==='darknotes').url='https://example.com/renamed';
   assert.equal(migrateConfig(validateConfig(old)).resources.some(r=>r.id==='darknotes'),true);
+});
+
+test('revision 2 collections gain Diploma without overwriting personal data or duplicating cards',()=>{
+  const old=clone(defaults);old.revision=2;
+  old.categories=old.categories.filter(c=>c.id!=='diploma');old.resources=old.resources.filter(r=>r.category!=='diploma');
+  old.resources[0].title='Мой семестр';old.todos=[{id:'task',text:'Сохранить меня',done:true}];
+  const next=migrateConfig(old);
+  assert.equal(next.categories.filter(c=>c.id==='diploma').length,1);
+  assert.equal(next.resources.filter(r=>r.category==='diploma').length,2);
+  assert.equal(next.resources[0].title,'Мой семестр');assert.deepEqual(next.todos,old.todos);
+  assert.equal(old.resources.length,3);assert.equal(migrateConfig(next),next);
+  const existing=clone(old);existing.categories.push({id:'my-diploma',name:'Диплом',description:'Мой раздел',icon:'folder'});
+  const reused=migrateConfig(existing);assert.equal(reused.categories.filter(c=>c.name==='Диплом').length,1);
+  assert.equal(reused.resources.filter(r=>r.category==='my-diploma').length,2);
 });
