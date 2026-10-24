@@ -28,6 +28,7 @@ function start() {
     engine, overlay, data,
     setTitleOpacity: (a) => { $('#title').style.opacity = a; },
     setCreditsOpacity: (a) => { $('#credits').style.opacity = a; },
+    setHeadingOpacity: (a) => { $('#heading').style.opacity = a; },
   };
 
   const state = { index: 0, t: 0, playing: true };
@@ -35,9 +36,16 @@ function start() {
   function enterScene(index) {
     overlay.clear();
     $('#credits').style.opacity = 0;
+    $('#title').style.opacity = 0;
+    $('#heading').style.opacity = 0;
+    engine.reset();
     state.index = Math.min(Math.max(index, 0), IBS.scenes.length - 1);
     state.t = 0;
     const scene = IBS.scenes[state.index];
+    const heading = scene.heading || {};
+    $('#heading .eyebrow').textContent = heading.eyebrow || '';
+    $('#heading h2').textContent = heading.title || '';
+    $('#heading p').textContent = heading.text || '';
     scene.enter(ctx);
     $('#scene-label').textContent = `${scene.number} · ${scene.title}`;
     $('#scene-count').textContent = `${state.index + 1} / ${IBS.scenes.length}`;
@@ -105,5 +113,15 @@ function start() {
   IBS.app = { engine, state, actions };
 }
 
-window.addEventListener('DOMContentLoaded', start);
+// Own electrode geometry is optional and exists only in the local copy.
+function loadOwnGeometry() {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'data/geometry.own.js';
+    script.onload = script.onerror = () => { script.remove(); resolve(); };
+    document.head.appendChild(script);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => loadOwnGeometry().then(start));
 })();

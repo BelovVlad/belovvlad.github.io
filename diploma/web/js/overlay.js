@@ -7,10 +7,11 @@ const IBS = window.IBS = window.IBS || {};
 const SVG = 'http://www.w3.org/2000/svg';
 
 class Callout {
-  constructor(layer, svg, { title, subtitle, anchor, row }) {
+  constructor(layer, svg, { title, subtitle, anchor, row, side }) {
     this.anchor = anchor;          // THREE.Vector3 in the assembly frame (mm)
     this.row = row;                // vertical position, fraction of the viewport height
-    this.side = null;
+    this.fixedSide = side || null; // 'left' | 'right' keeps the label on one side
+    this.side = this.fixedSide;
     this.vis = 0;
     this.el = document.createElement('div');
     this.el.className = 'callout';
@@ -28,7 +29,7 @@ class Callout {
 
   update(engine, centerX, opacity, dt) {
     const p = engine.project(this.anchor);
-    const wanted = p.x < centerX ? 'left' : 'right';
+    const wanted = this.fixedSide || (p.x < centerX ? 'left' : 'right');
     if (this.side === null || opacity < 0.01) this.side = wanted;
     const target = (wanted === this.side && !p.behind) ? 1 : 0;
     this.vis += Math.sign(target - this.vis) * Math.min(Math.abs(target - this.vis), dt * 3.5);

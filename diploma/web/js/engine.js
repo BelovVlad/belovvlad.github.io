@@ -11,6 +11,10 @@ const IBS = window.IBS = window.IBS || {};
 // share this single transform, so relative placement stays exactly as in IBSimu.
 const DISPLAY_ROTATION = new THREE.Euler(0, 0, -Math.PI / 2);
 
+// Edges are dark on solid parts and turn cream on see-through (ghost) parts.
+const EDGE_SOLID = new THREE.Color(0x080d12);
+const EDGE_GHOST = new THREE.Color(0xead4b7);
+
 const MATERIALS = {
   ion_source_body:        { color: 0x8c939b, roughness: 0.44 },
   source_diaphragm:       { color: 0xaeb3b9, roughness: 0.32 },
@@ -155,8 +159,10 @@ class Engine {
 
     this.parts = {};
     this.groups = {};
-    this.edgeMaterial = new THREE.LineBasicMaterial({ color: 0x080d12, transparent: true, opacity: 0.38 });
-    for (const part of d.parts) {
+    this.own = {};   // own electrode variants (data/geometry.own.js), keyed by original part key
+    const ownParts = (window.IBS_GEOMETRY_OWN || {}).parts || [];
+    for (const part of d.parts.concat(ownParts)) {
+      const isOwn = ownParts.includes(part);
       const geometry = decodePart(part);
       const look = MATERIALS[part.group] || MATERIALS.ion_source_body;
       const material = new THREE.MeshStandardMaterial({
@@ -166,11 +172,15 @@ class Engine {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      mesh.name = part.key;
+      mesh.name = isOwn ? part.key + ':own' : part.key;
       mesh.userData.part = part;
-      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 32), this.edgeMaterial);
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 32),
+        new THREE.LineBasicMaterial({ color: EDGE_SOLID, transparent: true, opacity: 0.38 }));
       mesh.add(edges);
+      mesh.userData.edges = edges;
+      mesh.userData.opacity = 1;
       this.assembly.add(mesh);
+      if (isOwn) { this.own[part.key] = mesh; this._setMeshOpacity(mesh, 0); continue; }
       this.parts[part.key] = mesh;
       (this.groups[part.group] = this.groups[part.group] || []).push(mesh);
     }
@@ -191,8 +201,67 @@ class Engine {
     const grid = groundGrid(1200);
     grid.rotation.x = -Math.PI / 2;
     grid.position.y = y - 0.05;
-    this.ground = { shadow, grid, y };
+    this.ground = { shadow, grid, y, base: y };
     this.scene.add(grid, shadow);
+  }
+
+  // Every scene starts from the same look: horizontal beam, all parts solid.
+  reset() {
+    this.setBeamTilt(0);
+    this.turntable.rotation.set(0, 0, 0);
+    for (const key in this.parts) this.setOpacity(key, 1);
+    for (const key in this.own) this.setOwnOpacity(key, 0);
+    this.ground.grid.material.uniforms.uOpacity.value = 1;
+    this.ground.shadow.material.opacity = 0.6;
+  }
+
+  // Beam direction on screen: 0 = horizontal (scene 1), 1 = vertical, pointing up.
+  // The ground follows the lowest corner of the assembly box.
+  setBeamTilt(k) {
+    this.display.rotation.set(0, 0, DISPLAY_ROTATION.z * (1 - k));
+    this.turntable.updateMatrixWorld(true);
+    const lo = new THREE.Vector3().fromArray(this.data.assembly_bbox_mm.min);
+    const hi = new THREE.Vector3().fromArray(this.data.assembly_bbox_mm.max);
+    let bottom = Infinity;
+    for (let i = 0; i < 8; i++) {
+      const corner = new THREE.Vector3(i & 1 ? hi.x : lo.x, i & 2 ? hi.y : lo.y, i & 4 ? hi.z : lo.z);
+      bottom = Math.min(bottom, this.assembly.localToWorld(corner).y);
+    }
+    const y = Math.min(bottom - 6, this.ground.base);
+    this.ground.shadow.position.y = y;
+    this.ground.grid.position.y = y - 0.05;
+  }
+
+  // Part opacity: below 1 the part becomes a see-through ghost without shadows, 0 hides it.
+  setOpacity(key, alpha) { if (this.parts[key]) this._setMeshOpacity(this.parts[key], alpha); }
+  setOwnOpacity(key, alpha) { if (this.own[key]) this._setMeshOpacity(this.own[key], alpha); }
+
+  _setMeshOpacity(mesh, alpha) {
+    if (mesh.userData.opacity === alpha) return;
+    mesh.visible = alpha > 0;
+    const ghost = alpha < 1, material = mesh.material;
+    if (material.transparent !== ghost) material.needsUpdate = true;
+    material.transparent = ghost;
+    material.depthWrite = !ghost;
+    material.opacity = alpha;
+    mesh.castShadow = !ghost;
+    const edges = mesh.userData.edges.material;
+    edges.color.copy(EDGE_SOLID).lerp(EDGE_GHOST, Math.min((1 - alpha) * 1.5, 1));
+    edges.opacity = ghost ? 0.12 + 0.2 * alpha : 0.38;
+    mesh.userData.opacity = alpha;
+  }
+
+  // Bounding box (assembly mm frame) of individual parts.
+  partBox(keys) {
+    const box = new THREE.Box3();
+    for (const key of [].concat(keys)) box.union(this.parts[key].geometry.boundingBox);
+    return box;
+  }
+
+  // Height of an assembly-frame point in the world (the turntable does not change it).
+  worldY(pointAssembly) {
+    this.turntable.updateMatrixWorld(true);
+    return this.assembly.localToWorld(pointAssembly.clone()).y;
   }
 
   // Bounding box (assembly mm frame) of one or several component groups.
