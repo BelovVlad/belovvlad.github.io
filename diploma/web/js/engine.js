@@ -161,6 +161,7 @@ class Engine {
     this.parts = {};
     this.groups = {};
     this.own = {};   // own electrode variants (data/geometry.own.js), keyed by original part key
+    this.extras = {};   // parts outside the IBSimu model (heater filament); hidden unless a scene shows them
     const ownParts = (window.IBS_GEOMETRY_OWN || {}).parts || [];
     for (const part of d.parts.concat(ownParts)) {
       const isOwn = ownParts.includes(part);
@@ -183,6 +184,7 @@ class Engine {
       mesh.userData.lift = 0;
       this.assembly.add(mesh);
       if (isOwn) { this.own[part.key] = mesh; this._setMeshOpacity(mesh, 0); continue; }
+      if (part.extra) { this.extras[part.key] = mesh; this._setMeshOpacity(mesh, 0); continue; }
       this.parts[part.key] = mesh;
       (this.groups[part.group] = this.groups[part.group] || []).push(mesh);
     }
@@ -215,6 +217,8 @@ class Engine {
     for (const key in this.own) this.setOwnOpacity(key, 0);
     for (const key in this.parts) this.setLift(key, 0);
     for (const key in this.own) this.setSwap(key, null);
+    for (const key in this.extras) this.setExtraOpacity(key, 0);
+    for (const mesh of this.meshes()) this._setGlow(mesh, 0, 0);
     this.ground.grid.material.uniforms.uOpacity.value = 1;
     this.ground.shadow.material.opacity = 0.6;
   }
@@ -245,6 +249,18 @@ class Engine {
   // Part opacity: below 1 the part becomes a see-through ghost without shadows, 0 hides it.
   setOpacity(key, alpha) { if (this.parts[key]) this._setMeshOpacity(this.parts[key], alpha); }
   setOwnOpacity(key, alpha) { if (this.own[key]) this._setMeshOpacity(this.own[key], alpha); }
+  setExtraOpacity(key, alpha) { if (this.extras[key]) this._setMeshOpacity(this.extras[key], alpha); }
+
+  // Glow of a part (and its own variant), k = 0..1: marks the part being explained.
+  setHighlight(key, k, color = 0xd64c50) {
+    for (const mesh of [this.parts[key], this.own[key], this.extras[key]]) if (mesh) this._setGlow(mesh, k, color);
+  }
+
+  _setGlow(mesh, k, color) {
+    const glow = mesh.userData.glow = mesh.userData.glow || new THREE.Color();
+    glow.set(color).multiplyScalar(k);
+    mesh.material.emissive.copy(glow);
+  }
 
   _setMeshOpacity(mesh, alpha) {
     mesh.userData.target = alpha;
@@ -269,11 +285,12 @@ class Engine {
   }
 
   // Every mesh, original and own: used to carry a look from one scene into the next.
-  meshes() { return Object.values(this.parts).concat(Object.values(this.own)); }
+  meshes() { return Object.values(this.parts).concat(Object.values(this.own), Object.values(this.extras)); }
 
   // What is on screen now (opacity, lift, beam tilt), to blend scenes.
   look() {
-    return { tilt: this.tiltShown, meshes: new Map(this.meshes().map((m) => [m, { opacity: m.userData.opacity, lift: m.position.y }])) };
+    return { tilt: this.tiltShown, meshes: new Map(this.meshes().map((m) => [m,
+      { opacity: m.userData.opacity, lift: m.position.y, emissive: m.material.emissive.clone() }])) };
   }
 
   // Show a mix of a previous look (k = 0) and the values the scene asked for (k = 1).
@@ -282,6 +299,7 @@ class Engine {
     for (const [mesh, old] of from.meshes) {
       this._applyOpacity(mesh, old.opacity + (mesh.userData.target - old.opacity) * k);
       mesh.position.y = old.lift + (mesh.userData.lift - old.lift) * k;
+      mesh.material.emissive.lerpColors(old.emissive, mesh.userData.glow, k);
     }
   }
 
@@ -334,7 +352,10 @@ class Engine {
   // Bounding box (assembly mm frame) of individual parts.
   partBox(keys) {
     const box = new THREE.Box3();
-    for (const key of [].concat(keys)) box.union(this.parts[key].geometry.boundingBox);
+    for (const key of [].concat(keys)) {
+      const mesh = this.parts[key] || this.extras[key];
+      if (mesh) box.union(mesh.geometry.boundingBox);
+    }
     return box;
   }
 

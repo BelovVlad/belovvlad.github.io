@@ -43,7 +43,7 @@
       54.5
     ]
   },
-  "triangles": 50956,
+  "triangles": 79946,
   "parts": [
     {
       "id": 7,
@@ -444,6 +444,56 @@
         ]
       ],
       "quantization_error_mm": 0.0007782101167315176
+    },
+    {
+      "id": null,
+      "key": "grk_filament",
+      "name": "GRK heater filament",
+      "group": "ion_source_body",
+      "parametric": false,
+      "source": "GRK/grk_filament_electrode.stl",
+      "sha256": "d299173510a3a6b8c2309f3f46174f1c7034ae671ec2cbdc8d3bc2ab6f727499",
+      "triangles": 28990,
+      "volume_mm3": 240.8168,
+      "matrix_stl_mm_to_assembly_m": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "bbox_mm": [
+        [
+          138.718643,
+          224.507111,
+          33.700115
+        ],
+        [
+          146.817566,
+          231.503784,
+          65.0
+        ]
+      ],
+      "quantization_error_mm": 0.00023880281373420752
     }
   ]
 }

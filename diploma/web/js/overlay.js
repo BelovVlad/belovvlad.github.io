@@ -13,6 +13,7 @@ class Callout {
     this.fixedSide = side || null; // 'left' | 'right' keeps the label on one side
     this.side = this.fixedSide;
     this.vis = 0;
+    this.weight = 1;               // own opacity factor: lets a scene show one label at a time
     this.el = document.createElement('div');
     this.el.className = 'callout';
     this.el.innerHTML = `<div class="callout-title"></div><div class="callout-sub"></div>`;
@@ -48,7 +49,7 @@ class Callout {
     this.line.setAttribute('points', `${edge},${y} ${elbow},${y} ${p.x},${p.y}`);
     this.dot.setAttribute('cx', p.x);
     this.dot.setAttribute('cy', p.y);
-    const alpha = String(opacity * this.vis);
+    const alpha = String(opacity * this.vis * this.weight);
     this.el.style.opacity = alpha;
     this.line.style.opacity = alpha;
     this.dot.style.opacity = alpha;

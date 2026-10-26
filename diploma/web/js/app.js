@@ -22,21 +22,25 @@ function start() {
     return fail('WebGL недоступен в этом браузере: ' + error.message);
   }
   const overlay = new IBS.Overlay($('#stage'));
+  const plasma = new IBS.Plasma(engine);
   const params = new URLSearchParams(location.search);
 
   // Text blocks: the scene sets its opacity each frame; text of the previous
   // scene fades out over TEXT_FADE seconds instead of vanishing.
   const TEXT_FADE = 0.7, CAMERA_BLEND = 2.4;
+  // [data-layer] blocks (cards, sections) fade the same way and take clicks only while shown.
   const texts = { title: $('#title'), credits: $('#credits'), heading: $('#heading') };
-  const shown = { title: 0, credits: 0, heading: 0 };
-  const leaving = { title: 0, credits: 0, heading: 0 };
+  for (const layer of document.querySelectorAll('[data-layer]')) texts[layer.dataset.layer] = layer;
+  const shown = {}, leaving = {};
+  for (const name in texts) shown[name] = leaving[name] = 0;
   let pendingHeading = null;
 
   const ctx = {
-    engine, overlay, data,
+    engine, overlay, plasma, data,
     setTitleOpacity: (a) => { shown.title = a; },
     setCreditsOpacity: (a) => { shown.credits = a; },
     setHeadingOpacity: (a) => { shown.heading = a; },
+    setLayerOpacity: (name, a) => { shown[name] = a; },
   };
 
   const state = { index: 0, t: 0, playing: true, from: null };
@@ -64,12 +68,23 @@ function start() {
     // A new heading text waits until the old one has faded out.
     pendingHeading = scene.heading || {};
     if (leaving.heading === 0) { setHeading(pendingHeading); pendingHeading = null; }
+    ctx.from = state.from;
     scene.enter(ctx);
     $('#scene-label').textContent = `${scene.number} · ${scene.title}`;
-    $('#scene-count').textContent = `${state.index + 1} / ${IBS.scenes.length}`;
+    // Count of main slides; a section shows its own number (06.2 / 06).
+    $('#scene-count').textContent = `${scene.number} / ${IBS.sceneTotal}`;
     $('#prev').disabled = state.index === 0;
     $('#next').disabled = state.index === IBS.scenes.length - 1;
+    // The address names the scene (#directions, #study-geometry): reload and links keep it.
+    if (location.hash !== '#' + scene.id) history.replaceState(null, '', '#' + scene.id);
   }
+
+  const sceneIndex = (id) => IBS.scenes.findIndex((scene) => scene.id === id);
+  // Cards and Back links change the hash; browser Back/Forward do too.
+  window.addEventListener('hashchange', () => {
+    const index = sceneIndex(location.hash.slice(1));
+    if (index >= 0 && index !== state.index) enterScene(index);
+  });
 
   function setPlaying(playing) {
     state.playing = playing;
@@ -80,6 +95,10 @@ function start() {
   const actions = {
     next: () => enterScene(state.index + 1),
     prev: () => enterScene(state.index - 1),
+    up: () => {
+      const parent = sceneIndex(IBS.scenes[state.index].parent);
+      if (parent >= 0) location.hash = IBS.scenes[parent].id;
+    },
     play: () => setPlaying(!state.playing),
     restart: () => { state.from = snapshot(); state.t = 0; setPlaying(true); },
     fullscreen: () => {
@@ -93,7 +112,7 @@ function start() {
 
   const keys = {
     ArrowRight: 'next', PageDown: 'next', ArrowLeft: 'prev', PageUp: 'prev',
-    ' ': 'play', k: 'play', r: 'restart', f: 'fullscreen', h: 'hud',
+    Escape: 'up', Backspace: 'up', ' ': 'play', k: 'play', r: 'restart', f: 'fullscreen', h: 'hud',
   };
   window.addEventListener('keydown', (event) => {
     const action = keys[event.key] || keys[event.key.toLowerCase()];
@@ -112,7 +131,8 @@ function start() {
   window.addEventListener('mousemove', wake);
   wake();
 
-  enterScene((parseInt(params.get('scene'), 10) || 1) - 1, true);
+  const fromHash = sceneIndex(location.hash.slice(1));
+  enterScene(fromHash >= 0 ? fromHash : (parseInt(params.get('scene'), 10) || 1) - 1, true);
   if (params.has('t')) state.t = parseFloat(params.get('t')) || 0;
   if (params.has('paused')) setPlaying(false);
 
@@ -142,11 +162,18 @@ function start() {
     ctx.from = state.from;
     const result = scene.update(state.t, ctx) || {};
     blendFromPrevious(state.t);
+    plasma.frame(dt);
     const fade = 1 - IBS.ease.window(state.t, 0, TEXT_FADE);
     if (pendingHeading && fade === 0) { setHeading(pendingHeading); pendingHeading = null; }
     for (const name in texts) {
       const old = leaving[name] * fade;
-      texts[name].style.opacity = name === 'heading' && pendingHeading ? old : Math.max(shown[name], old);
+      const opacity = name === 'heading' && pendingHeading ? old : Math.max(shown[name], old);
+      texts[name].style.opacity = opacity;
+      if (texts[name].dataset.layer) {
+        const off = shown[name] < 0.5;
+        if (texts[name].inert !== off) texts[name].inert = off;
+        texts[name].style.visibility = opacity > 0 ? 'visible' : 'hidden';
+      }
     }
     engine.render();
     overlay.update(engine, result.calloutOpacity ?? 1, params.has('paused') ? 1 : dt);
