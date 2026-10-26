@@ -14,6 +14,11 @@ const DISPLAY_ROTATION = new THREE.Euler(0, 0, -Math.PI / 2);
 // Edges are dark on solid parts and turn cream on see-through (ghost) parts.
 const EDGE_SOLID = new THREE.Color(0x080d12);
 const EDGE_GHOST = new THREE.Color(0xead4b7);
+// A see-through part writes depth only while it still looks almost solid. A faint
+// ghost that writes depth hides whatever is drawn after it (the suppressor inside
+// the Faraday cup), and the draw order changes as the model turns: the parts behind
+// it blink. Faint ghosts are drawn last, over everything that writes depth.
+const DEPTH_ALPHA = 0.85;
 
 const MATERIALS = {
   ion_source_body:        { color: 0x8c939b, roughness: 0.44 },
@@ -43,6 +48,85 @@ function decodePart(part) {
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+// Slit of a plate (beam along assembly Y): the opening around the plate centre,
+// found by rays in the plate plane in a few sections across the thickness; the
+// narrowest section counts (the throat, not the chamfer). Assembly mm.
+function measureSlit(geometry) {
+  const pos = geometry.attributes.position.array, box = geometry.boundingBox;
+  const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
+  const reach = [Infinity, Infinity, Infinity, Infinity];   // +x, -x, +z, -z
+  for (const f of [0.15, 0.3, 0.5, 0.7, 0.85]) {
+    const y = box.min.y + (box.max.y - box.min.y) * f + 1e-4;
+    const hit = [Infinity, Infinity, Infinity, Infinity];
+    for (let i = 0; i < pos.length; i += 9) {
+      const cut = [];
+      for (let a = 0; a < 3; a++) {
+        const p = i + 3 * a, q = i + 3 * ((a + 1) % 3);
+        if ((pos[p + 1] - y) * (pos[q + 1] - y) >= 0) continue;
+        const k = (y - pos[p + 1]) / (pos[q + 1] - pos[p + 1]);
+        cut.push(pos[p] + (pos[q] - pos[p]) * k, pos[p + 2] + (pos[q + 2] - pos[p + 2]) * k);
+      }
+      if (cut.length !== 4) continue;
+      const [x1, z1, x2, z2] = cut;
+      if ((z1 - cz) * (z2 - cz) < 0) {
+        const d = x1 + (x2 - x1) * (cz - z1) / (z2 - z1) - cx;
+        if (d > 0) hit[0] = Math.min(hit[0], d); else hit[1] = Math.min(hit[1], -d);
+      }
+      if ((x1 - cx) * (x2 - cx) < 0) {
+        const d = z1 + (z2 - z1) * (cx - x1) / (x2 - x1) - cz;
+        if (d > 0) hit[2] = Math.min(hit[2], d); else hit[3] = Math.min(hit[3], -d);
+      }
+    }
+    for (let i = 0; i < 4; i++) reach[i] = Math.min(reach[i], hit[i]);
+  }
+  return { x0: cx - reach[1], x1: cx + reach[0], z0: cz - reach[3], z1: cz + reach[2], y0: box.min.y, y1: box.max.y };
+}
+
+// Piecewise-linear map that moves the slit edges a, b to a2, b2 and leaves
+// everything farther than `band` mm from the slit in place.
+function stretch(v, a, b, a2, b2, band) {
+  if (v <= a - band || v >= b + band) return v;
+  if (v < a) return a - band + (v - a + band) * (a2 - a + band) / band;
+  if (v <= b) return a2 + (v - a) * (b2 - a2) / (b - a);
+  return b2 + (v - b) * (b + band - b2) / band;
+}
+
+// Weight 1 inside [a, b], falling to 0 over `fall` mm outside.
+function reachWeight(v, a, b, fall) {
+  const out = Math.max(a - v, v - b, 0) / fall;
+  return out >= 1 ? 0 : 1 - out * out * (3 - 2 * out);
+}
+
+// Moves the vertices of a plate and of its edge lines (from saved copies).
+// m: { width, length } slit factors, { offset } mm across the slit, { thickness }
+// factor with the face towards the source kept in place. Only the plate plane is
+// stretched, so the flat faces stay flat. Illustration, not a CAD rebuild.
+function morphMesh(mesh, m) {
+  const slit = mesh.userData.slit = mesh.userData.slit || measureSlit(mesh.geometry);
+  for (const geometry of [mesh.geometry, mesh.userData.edges.geometry]) {
+    const attribute = geometry.attributes.position, pos = attribute.array;
+    if (!m) {
+      if (geometry.userData.base) { pos.set(geometry.userData.base); delete geometry.userData.base; attribute.needsUpdate = true; }
+      continue;
+    }
+    const base = geometry.userData.base = geometry.userData.base || pos.slice();
+    const { x0, x1, z0, z1, y0 } = slit;
+    const xc = (x0 + x1) / 2, zc = (z0 + z1) / 2;
+    const hw = (x1 - x0) / 2 * (m.width ?? 1), hl = (z1 - z0) / 2 * (m.length ?? 1), shift = m.offset ?? 0;
+    const bandX = Math.max(6, x1 - x0), bandZ = 10, fall = 4;
+    const thick = m.thickness ?? 1;
+    for (let i = 0; i < pos.length; i += 3) {
+      const x = base[i], y = base[i + 1], z = base[i + 2];
+      const wx = reachWeight(z, Math.min(z0, zc - hl), Math.max(z1, zc + hl), fall);
+      const wz = reachWeight(x, Math.min(x0, xc - hw + shift), Math.max(x1, xc + hw + shift), fall);
+      pos[i] = x + wx * (stretch(x, x0, x1, xc - hw + shift, xc + hw + shift, bandX) - x);
+      pos[i + 1] = y0 + (y - y0) * thick;
+      pos[i + 2] = z + wz * (stretch(z, z0, z1, zc - hl, zc + hl, bandZ) - z);
+    }
+    attribute.needsUpdate = true;
+  }
 }
 
 // Studio environment for metallic reflections, built in code (no HDR files needed offline).
@@ -115,7 +199,9 @@ class Engine {
 
     this.scene = new THREE.Scene();
     this.scene.environment = studioEnvironment(this.renderer);
-    this.camera = new THREE.PerspectiveCamera(28, 1, 1, 5000);
+    // Near plane 10 mm (camera stays > 80 mm away): depth precision for the 0.05 mm
+    // gaps between nested parts, so their faces do not fight.
+    this.camera = new THREE.PerspectiveCamera(28, 1, 10, 5000);
     this.target = new THREE.Vector3();
 
     this._buildLights();
@@ -217,6 +303,8 @@ class Engine {
     for (const key in this.own) this.setOwnOpacity(key, 0);
     for (const key in this.parts) this.setLift(key, 0);
     for (const key in this.own) this.setSwap(key, null);
+    for (const key in this.parts) this.setMorph(key, null);
+    this.setSection(null);
     for (const key in this.extras) this.setExtraOpacity(key, 0);
     for (const mesh of this.meshes()) this._setGlow(mesh, 0, 0);
     this.ground.grid.material.uniforms.uOpacity.value = 1;
@@ -273,12 +361,14 @@ class Engine {
     const ghost = alpha < 1, material = mesh.material;
     if (material.transparent !== ghost) material.needsUpdate = true;
     material.transparent = ghost;
-    // Depth stays on, so a part never shows its own inner and back faces: going
-    // from 1 to 0.99 looks the same, and the fade has no visible jump. The shadow
-    // stays too, for the same reason.
-    material.depthWrite = true;
+    // Depth stays on while the part is nearly solid, so it does not show its own
+    // inner and back faces: going from 1 to 0.99 looks the same. The shadow stays
+    // for the same reason.
+    material.depthWrite = alpha >= DEPTH_ALPHA;
+    mesh.renderOrder = mesh.userData.edges.renderOrder = material.depthWrite ? 0 : 1;
     material.opacity = alpha;
     const edges = mesh.userData.edges.material;
+    edges.depthWrite = material.depthWrite;
     edges.color.copy(EDGE_SOLID).lerp(EDGE_GHOST, Math.min((1 - alpha) * 1.5, 1));
     edges.opacity = 0.12 + 0.26 * alpha;
     mesh.userData.opacity = alpha;
@@ -329,6 +419,45 @@ class Engine {
       material.clippingPlanes = planes;
       material.clipShadows = true;
     }
+  }
+
+  // Illustrative change of a plate (and its own variant), see morphMesh; null restores it.
+  setMorph(key, m) {
+    for (const mesh of [this.parts[key], this.own[key]]) if (mesh && (m || mesh.geometry.userData.base)) morphMesh(mesh, m);
+  }
+
+  // The variant on screen in the later slides: own part if loaded, else the original.
+  shown(key) { return this.own[key] || this.parts[key]; }
+
+  // Slit of the shown variant of a plate before any morph (assembly mm).
+  slit(key) {
+    const mesh = this.shown(key);
+    if (!mesh.userData.slit) {
+      const morphed = mesh.geometry.userData.base;
+      if (morphed) mesh.geometry.attributes.position.array.set(morphed);
+      mesh.userData.slit = measureSlit(mesh.geometry);
+      if (morphed) this.setMorph(key, null);
+    }
+    return mesh.userData.slit;
+  }
+
+  // Cut-away at the assembly plane z = const (mm): the half on the camera side is
+  // removed from every part, so the section is seen. The plane follows the model
+  // while it turns (updated before each frame). null shows whole parts.
+  setSection(z) {
+    if (z === null && this.section !== null && this.section !== undefined)
+      for (const mesh of this.meshes()) this._clip(mesh, null);
+    this.section = z;
+  }
+
+  _applySection() {
+    this.turntable.updateMatrixWorld(true);
+    const camera = this.assembly.worldToLocal(this.camera.position.clone());
+    const keep = camera.z > this.section ? -1 : 1;
+    const normal = new THREE.Vector3(0, 0, keep).applyQuaternion(this.assembly.getWorldQuaternion(new THREE.Quaternion()));
+    const point = this.assembly.localToWorld(new THREE.Vector3(0, 0, this.section));
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point);
+    for (const mesh of this.meshes()) this._clip(mesh, plane);
   }
 
   // Shift a part (and its own variant) along the beam, mm; used for exploded views.
@@ -407,7 +536,10 @@ class Engine {
     this.camera.updateProjectionMatrix();
   }
 
-  render() { this.renderer.render(this.scene, this.camera); }
+  render() {
+    if (this.section !== null && this.section !== undefined) this._applySection();
+    this.renderer.render(this.scene, this.camera);
+  }
 }
 
 IBS.Engine = Engine;

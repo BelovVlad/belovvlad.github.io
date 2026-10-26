@@ -211,6 +211,14 @@ body.hud-hidden #hud { opacity: 0; pointer-events: none; }
   transition: transform 0.6s ease;
 }
 .card:hover .card-media img, .card:hover .card-media video { transform: scale(1.03); }
+/* Animated illustration (js/cards.js) on the same grid as the empty frame */
+.card-media.animated {
+  background:
+    linear-gradient(rgba(234, 212, 183, 0.035) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(234, 212, 183, 0.035) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(80% 90% at 50% 40%, rgba(18, 26, 34, 0.9), rgba(8, 13, 18, 0.95));
+}
+.card-media canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* Empty slot until an illustration is set in data/directions.js */
 .card-media.empty {
   display: grid;
@@ -322,6 +330,37 @@ body.hud-hidden #hud { opacity: 0; pointer-events: none; }
 .study-back:hover { border-color: rgba(214, 76, 80, 0.55); }
 .study-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .study-status { font-size: clamp(11px, 0.8vw, 14px); color: var(--ink-3); letter-spacing: 0.04em; }
+
+/* Section with a 3D animation: lists in a left column, the model to the right */
+.study.has-demo { right: auto; width: min(29rem, 32vw); justify-content: flex-start; }
+.study.has-demo .study-columns { grid-template-columns: 1fr; gap: clamp(10px, 1vw, 16px); overflow: auto; }
+.study.has-demo .study-panel { max-height: none; overflow: visible; padding: clamp(14px, 1.2vw, 22px); }
+.study.has-demo .study-panel li { font-size: clamp(12px, 0.95vw, 17px); }
+.study.has-demo .study-footer { margin-top: auto; }
+.study-panel li { transition: color 0.4s ease; }
+.study-panel ul.has-active li { color: var(--ink-3); }
+.study-panel ul.has-active li.active { color: var(--cream); }
+.study-panel li.active::before { width: 0.7em; }
+.study-demo:empty { display: none; }
+.study-demo-note { margin: 0; font-size: clamp(10px, 0.72vw, 13px); line-height: 1.4; color: var(--ink-3); }
+.axis-chart {
+  padding: clamp(12px, 1.1vw, 20px);
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  backdrop-filter: blur(12px);
+}
+.axis-head { display: flex; justify-content: space-between; gap: 1em; margin-bottom: 0.5em;
+  font-size: clamp(11px, 0.8vw, 14px); letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm); }
+.axis-head b { font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--cream); }
+.axis-chart svg { display: block; width: 100%; height: auto; }
+.axis-bands rect { fill: rgba(234, 212, 183, 0.06); }
+.axis-grid { stroke: rgba(234, 212, 183, 0.08); stroke-width: 1; }
+.axis-zero { stroke: rgba(234, 212, 183, 0.35); stroke-width: 1; stroke-dasharray: 3 3; }
+.axis-tick { fill: var(--ink-3); font-size: 10px; font-family: var(--font); }
+.axis-curve { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.callout.live .callout-sub { color: var(--cream); }
+.callout.live { border-color: var(--cream); }
 
 /* Source slides: numbered steps on the left, legend and source note bottom right */
 .slide-panel { position: absolute; inset: 0; pointer-events: none; opacity: 0; visibility: hidden; }

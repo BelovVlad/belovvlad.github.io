@@ -55,6 +55,13 @@ class Callout {
     this.dot.style.opacity = alpha;
   }
 
+  // Live text (values that change during the scene); untouched when equal.
+  setText(title, subtitle) {
+    const t = this.el.querySelector('.callout-title'), s = this.el.querySelector('.callout-sub');
+    if (title !== undefined && t.textContent !== title) t.textContent = title;
+    if (subtitle !== undefined && s.textContent !== subtitle) s.textContent = subtitle;
+  }
+
   remove() { this.el.remove(); this.line.remove(); this.dot.remove(); }
 }
 

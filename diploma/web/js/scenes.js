@@ -383,6 +383,7 @@ const directions = {
   enter() {},
   update(t, ctx) {
     backdrop(t, ctx);
+    if (IBS.cards) IBS.cards.draw(t, ctx);
     ctx.setHeadingOpacity(win(t, 0.6, 1.6));
     ctx.setLayerOpacity('directions', 1);
     IBS.directions.setCardsIn([0, 1, 2].map((i) => win(t, 0.9 + 0.18 * i, 1.9 + 0.18 * i)));
@@ -391,20 +392,24 @@ const directions = {
 };
 
 // Sections of the three directions: for now the plan of each study; results
-// will come from data/studies.js. Escape / Backspace return to slide 3.
-const studies = (IBS.directions ? IBS.directions.list : []).map((d) => ({
-  id: 'study-' + d.id,
-  title: d.title,
-  parent: 'directions',
-  heading: { eyebrow: `Направление ${d.number}`, title: d.title, text: d.lead },
-  enter() {},
-  update(t, ctx) {
-    backdrop(t, ctx);
-    ctx.setHeadingOpacity(win(t, 0.6, 1.6));
-    ctx.setLayerOpacity('study-' + d.id, win(t, 0.8, 1.8));
-    return { calloutOpacity: 0 };
-  },
-}));
+// will come from data/studies.js. A section with demo shows its animation
+// (js/demos.js) instead of the dimmed backdrop. Escape / Backspace return to slide 3.
+const studies = (IBS.directions ? IBS.directions.list : []).map((d) => {
+  const demo = d.demo && IBS.demos && IBS.demos[d.demo.id];
+  return {
+    id: 'study-' + d.id,
+    title: d.title,
+    parent: 'directions',
+    heading: { eyebrow: `Направление ${d.number}`, title: d.title, text: d.lead },
+    enter(ctx) { if (demo) demo.enter(ctx); },
+    update(t, ctx) {
+      const result = demo ? demo.update(t, ctx) : (backdrop(t, ctx), { calloutOpacity: 0 });
+      ctx.setHeadingOpacity(win(t, 0.6, 1.6));
+      ctx.setLayerOpacity('study-' + d.id, win(t, 0.8, 1.8));
+      return result;
+    },
+  };
+});
 
 // Numbering: main slides 01, 02, …; sections of a slide get its number + .1, .2, …
 const scenes = [installation, device, principle, electrodes, ibsimu, directions, ...studies];

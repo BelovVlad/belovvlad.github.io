@@ -19,11 +19,15 @@ function el(tag, className, text) {
   return node;
 }
 
-// Illustration slot: an empty frame until media.src is set.
+// Illustration slot: media.src, else the animation of a direction with a demo
+// (js/cards.js), else an empty frame.
 function media(direction) {
   const figure = el('figure', 'card-media');
   const { src, alt, concept } = direction.media || {};
-  if (src) {
+  if (!src && direction.demo && IBS.cards) {
+    figure.classList.add('animated');
+    figure.append(IBS.cards.canvas(direction.demo.id), el('figcaption', 'media-note', 'иллюстрация · не расчёт IBSimu'));
+  } else if (src) {
     const video = /\.(mp4|webm)$/i.test(src);
     const item = el(video ? 'video' : 'img');
     item.src = src;
@@ -51,17 +55,30 @@ function card(direction) {
   return link;
 }
 
+// List items of each section, to mark the one an animation is showing.
+const items = {};
+// Free slot of a section with an animation (chart, readouts), under the lists.
+const slots = {};
+
 function section(direction) {
   const root = el('section', 'layer study');
   root.dataset.layer = 'study-' + direction.id;
   root.setAttribute('aria-label', direction.title);
   const columns = el('div', 'study-columns');
-  for (const list of direction.lists) {
+  items[direction.id] = direction.lists.map((list) => {
     const panel = el('div', 'study-panel');
     const ul = el('ul');
-    for (const item of list.items) ul.append(el('li', null, item));
+    const rows = list.items.map((item) => el('li', null, item));
+    ul.append(...rows);
     panel.append(el('h3', null, list.title), ul);
     columns.append(panel);
+    return rows;
+  });
+  if (direction.demo) {
+    root.classList.add('has-demo');
+    const slot = slots[direction.id] = el('div', 'study-demo');
+    columns.append(slot);
+    if (direction.demo.note) columns.append(el('p', 'study-demo-note', direction.demo.note));
   }
   const count = ((STUDIES[direction.id] || {}).configurations || []).length;
   const footer = el('div', 'study-footer');
@@ -89,5 +106,13 @@ IBS.directions = {
   list: DIRECTIONS,
   // Staggered entrance of the cards, k_i in 0..1 each.
   setCardsIn(values) { cards.forEach((c, i) => c.style.setProperty('--in', values[i] ?? 1)); },
+  // Marks item `index` of list `list` in a section (-1: none marked).
+  setActiveItem(id, list, index) {
+    (items[id] || []).forEach((rows, l) => {
+      rows.forEach((row, i) => row.classList.toggle('active', l === list && i === index));
+      if (rows[0]) rows[0].parentElement.classList.toggle('has-active', l === list && index >= 0);
+    });
+  },
+  slot: (id) => slots[id],
 };
 })();

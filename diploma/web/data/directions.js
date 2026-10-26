@@ -6,6 +6,9 @@
 //   media: { src: 'media/geometry.webp', alt: 'Изменение ширины щели' }
 // .mp4 / .webm files play as a muted loop. concept: true captions the
 // illustration as conceptual, so it is not taken for a computed result.
+//
+// demo — the section has a 3D animation (js/demos.js): the lists move into a
+// left column, demo.note says what the animation is (and is not).
 window.IBS_DIRECTIONS = [
   {
     id: 'geometry',
@@ -14,6 +17,7 @@ window.IBS_DIRECTIONS = [
     short: 'Размеры существующей конструкции: щели, толщины электродов, зазоры между пластинами',
     lead: 'Исследование существующей конструкции экстракционного узла: изменяются размеры деталей CAD-модели',
     media: { src: null, alt: '', concept: false },
+    demo: { id: 'geometry', note: 'Иллюстрация: деформация CAD-модели электродов, не рассчитанные конфигурации' },
     lists: [
       {
         title: 'Варьируемые параметры',
@@ -42,6 +46,7 @@ window.IBS_DIRECTIONS = [
     short: 'Геометрия неизменна, варьируются потенциалы электродов',
     lead: 'Механическая геометрия не меняется; потенциалы электродов варьируются в пределах физических ограничений модели',
     media: { src: null, alt: '', concept: true },
+    demo: { id: 'potentials', note: 'Иллюстрация: 2D-сечение поперёк щели, уравнение Лапласа без объёмного заряда, напряжения условные — не расчёт IBSimu' },
     lists: [
       {
         title: 'Варьируемые параметры',

@@ -23,6 +23,7 @@ function start() {
   }
   const overlay = new IBS.Overlay($('#stage'));
   const plasma = new IBS.Plasma(engine);
+  const field = new IBS.Field(engine);
   const params = new URLSearchParams(location.search);
 
   // Text blocks: the scene sets its opacity each frame; text of the previous
@@ -36,7 +37,7 @@ function start() {
   let pendingHeading = null;
 
   const ctx = {
-    engine, overlay, plasma, data,
+    engine, overlay, plasma, field, data,
     setTitleOpacity: (a) => { shown.title = a; },
     setCreditsOpacity: (a) => { shown.credits = a; },
     setHeadingOpacity: (a) => { shown.heading = a; },
@@ -158,6 +159,7 @@ function start() {
     last = now;
     if (state.playing) state.t += dt;
     const scene = IBS.scenes[state.index];
+    field.step(6);   // potential field of the potentials section, solved in the background
     for (const name in shown) shown[name] = 0;
     ctx.from = state.from;
     const result = scene.update(state.t, ctx) || {};
