@@ -1,5 +1,5 @@
 // HTML panels of individual slides: numbered step lists, the particle legend,
-// source notes and the frame of the IBSimu slide. Each panel is a [data-layer]
+// source notes, the goal and tasks and the frame of the IBSimu slide. Each panel is a [data-layer]
 // element: the player fades it in and out like the headings.
 (function () {
 'use strict';
@@ -89,5 +89,28 @@ function modelFrame(layer, caption) {
   return { root, slots };
 }
 
-IBS.panels = { steps, modelFrame };
+// Goal and tasks slide: the goal in a quote block, the tasks numbered below;
+// each block comes in with its own --in (0..1), set by the scene.
+function goals(layer, { goal, tasks }) {
+  const root = panel(layer);
+  root.classList.add('goals');
+  const head = el('div', 'goal');
+  head.append(el('h3', null, 'Цель работы'), el('p', null, goal));
+  const list = el('ol', 'tasks');
+  const rows = tasks.map((text, i) => {
+    const li = el('li');
+    li.append(el('span', 'task-n', String(i + 1).padStart(2, '0')), el('p', null, text));
+    list.append(li);
+    return li;
+  });
+  const title = el('h3', 'tasks-title', 'Задачи');
+  root.append(head, title, list);
+  const blocks = [head, title, ...rows];
+  return {
+    count: blocks.length,
+    setIn(values) { blocks.forEach((b, i) => b.style.setProperty('--in', values[i] ?? 1)); },
+  };
+}
+
+IBS.panels = { steps, modelFrame, goals };
 })();

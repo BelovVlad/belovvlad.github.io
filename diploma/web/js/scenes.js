@@ -57,6 +57,31 @@ const installation = {
   },
 };
 
+// Scene 2. Goal and tasks: the text on the left, the whole assembly turning on the right.
+const goals = {
+  id: 'goals',
+  title: 'Цель и задачи',
+  heading: {
+    eyebrow: 'Постановка задачи',
+    title: 'Цель и задачи работы',
+    text: 'Экстракционный узел ионного источника: от устройства к численной модели',
+  },
+  panel: IBS.panels.goals('goals', window.IBS_GOALS || { goal: '', tasks: [] }),
+  enter() {},
+  update(t, ctx) {
+    const { engine } = ctx;
+    engine.renderer.toneMappingExposure = 0.85;
+    engine.ground.grid.material.uniforms.uOpacity.value = 0.7;
+    engine.setOrbit(0, 20, 1.02, new THREE.Vector3(-engine.radius * 0.5, engine.radius * 0.05, 0));
+    const omega = (2 * Math.PI) / 90, tau = 3.0;
+    engine.turntable.rotation.y = THREE.MathUtils.degToRad(-38) + omega * (t - tau * (1 - Math.exp(-t / tau)));
+    ctx.setHeadingOpacity(win(t, 0.6, 1.6));
+    ctx.setLayerOpacity('goals', 1);
+    this.panel.setIn(Array.from({ length: this.panel.count }, (_, i) => win(t, 1.0 + 0.35 * i, 1.9 + 0.35 * i)));
+    return { calloutOpacity: 0 };
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Ion source slides. What is shown and where it comes from: data/sources.js.
 // Only CAD parts of our GRK are shown; the discharge region, field lines and
@@ -412,7 +437,7 @@ const studies = (IBS.directions ? IBS.directions.list : []).map((d) => {
 });
 
 // Numbering: main slides 01, 02, …; sections of a slide get its number + .1, .2, …
-const scenes = [installation, device, principle, electrodes, ibsimu, directions, ...studies];
+const scenes = [installation, goals, device, principle, electrodes, ibsimu, directions, ...studies];
 const pad = (n) => String(n).padStart(2, '0');
 let main = 0;
 for (const scene of scenes) {

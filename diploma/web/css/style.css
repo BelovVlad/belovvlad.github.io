@@ -366,6 +366,46 @@ body.hud-hidden #hud { opacity: 0; pointer-events: none; }
 
 /* Source slides: numbered steps on the left, legend and source note bottom right */
 .slide-panel { position: absolute; inset: 0; pointer-events: none; opacity: 0; visibility: hidden; }
+
+/* Goal and tasks (slide 2): blocks slide in one by one, --in 0..1 */
+.goals {
+  inset: auto;
+  left: clamp(20px, 3.5vw, 64px);
+  top: clamp(150px, 24vh, 270px);
+  width: min(40rem, 46vw);
+}
+.goals .goal, .goals .tasks-title, .goals .tasks li {
+  opacity: var(--in, 1);
+  translate: calc((1 - var(--in, 1)) * -18px) 0;
+}
+.goals h3 {
+  margin: 0 0 0.7em;
+  font-size: clamp(11px, 0.85vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--warm);
+}
+.goal {
+  padding: clamp(14px, 1.3vw, 24px) clamp(16px, 1.5vw, 28px);
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-left: 3px solid var(--accent);
+  backdrop-filter: blur(12px);
+}
+.goal p {
+  margin: 0;
+  font-size: clamp(14px, 1.2vw, 22px);
+  line-height: 1.4;
+  color: var(--cream);
+  text-wrap: pretty;
+}
+.tasks-title { margin-top: clamp(18px, 2.2vh, 32px) !important; }
+.tasks { margin: 0; padding: 0; list-style: none; display: grid; gap: clamp(8px, 1.1vh, 14px); }
+.tasks li { display: grid; grid-template-columns: 2.6em 1fr; align-items: baseline; }
+.task-n { font-family: var(--mono); font-size: clamp(11px, 0.85vw, 15px); color: var(--accent); letter-spacing: 0.1em; }
+.tasks p { margin: 0; font-size: clamp(13px, 1.02vw, 18px); line-height: 1.38; color: var(--ink); text-wrap: pretty; }
 .steps {
   position: absolute;
   left: clamp(20px, 3.5vw, 64px);
@@ -491,4 +531,5 @@ body.hud-hidden #hud { opacity: 0; pointer-events: none; }
   .study-columns { grid-template-columns: 1fr; }
   .steps { width: 44vw; }
   .model-frame { left: 8vw; }
+  .goals { width: auto; right: 20px; top: 150px; }
 }
