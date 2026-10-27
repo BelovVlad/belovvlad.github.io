@@ -63,6 +63,7 @@ function start() {
     overlay.clear();
     for (const name in texts) leaving[name] = parseFloat(texts[name].style.opacity) || 0;
     engine.reset();
+    field.hide();   // the potential plane belongs to its section only
     state.index = Math.min(Math.max(index, 0), IBS.scenes.length - 1);
     state.t = 0;
     const scene = IBS.scenes[state.index];
@@ -183,7 +184,7 @@ function start() {
   }
   $('#loading').remove();
   requestAnimationFrame(frame);
-  IBS.app = { engine, state, actions };
+  IBS.app = { engine, field, state, actions };
 }
 
 // Own electrode geometry is optional and exists only in the local copy.

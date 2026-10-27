@@ -152,8 +152,8 @@ function drawGeometry(canvas, t, engine) {
 }
 
 // ---------------------------------------------------------------------------
-// Colour ramp of js/field.js (0..80 kV), negative potential in blue.
-const RAMP = [[0, [16, 26, 36]], [0.35, [59, 42, 58]], [0.7, [168, 67, 74]], [1, [240, 196, 154]]];
+// Colour ramp of js/field.js (0..80 kV); negative potential tinted blue.
+const RAMP = [[0, [14, 22, 31]], [0.35, [52, 38, 54]], [0.7, [150, 60, 68]], [1, [232, 180, 140]]];
 function ramp(k, out) {
   let i = 0;
   while (i < RAMP.length - 2 && k > RAMP[i + 1][0]) i++;
@@ -163,7 +163,38 @@ function ramp(k, out) {
 }
 
 const VOLT_NAMES = { source: 'Диафрагма источника', accel: 'Ускоряющая диафрагма', suppressor: 'Подавляющая диафрагма' };
-const kv = (v) => (Math.abs(v) >= 10 ? `${num(v)} кВ` : `${num(v * 1000, 0)} В`);
+const SHORT_NAMES = { source: 'источник', accel: 'ускоряющая', suppressor: 'подавляющая' };
+const kv = (v) => (Math.abs(v) >= 10 ? `${num(v)} кВ` : Math.abs(v) < 0.0005 ? '0 В' : `${num(v * 1000, 0)} В`);
+// Window of the card picture, mm from the slit axis / the source diaphragm.
+const VIEW = { y0: -5, y1: 64 };
+// Equipotentials: every 5 kV, every 0.5 kV within ±3 kV; 0 V drawn apart.
+const LEVELS = [];
+for (let v = 5; v < 80; v += 5) LEVELS.push(v);
+for (let v = -3; v <= 3; v += 0.5) if (Math.abs(v) > 0.01) LEVELS.push(v);
+
+// Edge pairs crossed by a level, by corner code (bit set: corner above the level).
+const CASES = [[], [[3, 0]], [[0, 1]], [[3, 1]], [[1, 2]], [[3, 2], [0, 1]], [[0, 2]], [[3, 2]],
+  [[2, 3]], [[0, 2]], [[0, 3], [1, 2]], [[1, 2]], [[1, 3]], [[0, 1]], [[0, 3]], []];
+
+// Contour segments of level `v` on the grid window (marching squares), into path `p`.
+function contour(p, phi, nx, i0, i1, j0, j1, v, X, Y, h) {
+  for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) {
+    const k = j * nx + i;
+    const a = phi[k], b = phi[k + 1], c = phi[k + nx + 1], d = phi[k + nx];
+    const code = (a > v) | ((b > v) << 1) | ((c > v) << 2) | ((d > v) << 3);
+    // No lines where there is no field (inside the cup, phi ~ 0 with round-off).
+    if (code === 0 || code === 15 || Math.max(a, b, c, d) - Math.min(a, b, c, d) < 1e-4) continue;
+    // Crossings on the edges: bottom (a-b), right (b-c), top (d-c), left (a-d).
+    const e = [
+      () => [i + (v - a) / (b - a), j], () => [i + 1, j + (v - b) / (c - b)],
+      () => [i + (v - d) / (c - d), j + 1], () => [i, j + (v - a) / (d - a)],
+    ];
+    for (const [m, n] of CASES[code]) {
+      const [x1, y1] = e[m](), [x2, y2] = e[n]();
+      p.moveTo(X(x1 * h), Y(y1 * h)); p.lineTo(X(x2 * h), Y(y2 * h));
+    }
+  }
+}
 
 function drawPotentials(canvas, t, field, state) {
   const frame = fit(canvas);
@@ -171,54 +202,99 @@ function drawPotentials(canvas, t, field, state) {
   const { g, w, h } = frame;
   if (!field.ready) { caption(g, 'Потенциал в сечении', 'расчёт поля…', false); return; }
   const grid = field.grid, { volts, phase } = IBS.demos.voltagesAt(t);
+  const H = grid.h, nx = grid.nx;
+  // Uniform scale: the window height fills the frame, the slit axis in the middle.
+  const k = h / (VIEW.y1 - VIEW.y0), halfW = w / 2 / k;
+  const X = (x) => w / 2 + (x - (field.axisX - field.x0)) * k, Y = (y) => h - (y - VIEW.y0) * k;
+  const ic = Math.round((field.axisX - field.x0) / H);
+  const i0 = Math.max(0, ic - Math.ceil(halfW / H) - 1), i1 = Math.min(nx - 1, ic + Math.ceil(halfW / H) + 1);
+  const j1 = Math.min(grid.ny - 1, Math.ceil(VIEW.y1 / H) + 1);
 
-  // Picture SCALE times finer than the grid (bilinear potential, so the lines
-  // are not stepped); rows from the source diaphragm up, as many as fit the frame.
-  const SCALE = 2, nx = (grid.nx - 1) * SCALE + 1;
-  const rows = Math.min((grid.ny - 1) * SCALE + 1, Math.round(nx * (h / w)));
-  if (!state.image || state.image.height !== rows) {
+  // Potential at the grid nodes for the current voltages.
+  if (!state.phi || state.phi.length !== nx * grid.ny) state.phi = new Float32Array(nx * grid.ny);
+  const phi = state.phi, [bs, ba, bp] = grid.basis;
+  for (let j = 0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const n = j * nx + i;
+    phi[n] = volts.source * bs[n] + volts.accel * ba[n] + volts.suppressor * bp[n];
+  }
+
+  // Colour fill: a buffer of one pixel per grid node, smoothed when scaled up.
+  const bw = i1 - i0 + 1, bh = j1 + 1;
+  if (!state.buffer || state.buffer.width !== bw || state.buffer.height !== bh) {
     state.buffer = document.createElement('canvas');
-    state.buffer.width = nx; state.buffer.height = rows;
-    state.image = state.buffer.getContext('2d').createImageData(nx, rows);
-    state.phi = new Float32Array(nx * rows);
-    state.label = new Int8Array(nx * rows);
-    for (let j = 0; j < rows; j++) for (let i = 0; i < nx; i++)
-      state.label[j * nx + i] = grid.label[Math.round(j / SCALE) * grid.nx + Math.round(i / SCALE)];
+    state.buffer.width = bw; state.buffer.height = bh;
+    state.image = state.buffer.getContext('2d').createImageData(bw, bh);
   }
-  const nodes = grid.basis[0].map((_, k) => volts.source * grid.basis[0][k] + volts.accel * grid.basis[1][k] + volts.suppressor * grid.basis[2][k]);
-  const { image, phi, label } = state, px = image.data, rgb = [0, 0, 0];
-  for (let j = 0; j < rows; j++) {
-    const fj = j / SCALE, j0 = Math.min(Math.floor(fj), grid.ny - 2), c = fj - j0;
-    for (let i = 0; i < nx; i++) {
-      const fi = i / SCALE, i0 = Math.min(Math.floor(fi), grid.nx - 2), a = fi - i0, k = j0 * grid.nx + i0;
-      phi[j * nx + i] = (nodes[k] * (1 - a) + nodes[k + 1] * a) * (1 - c) + (nodes[k + grid.nx] * (1 - a) + nodes[k + grid.nx + 1] * a) * c;
-    }
-  }
-  for (let j = 0; j < rows; j++) for (let i = 0; i < nx; i++) {
-    const k = j * nx + i, o = ((rows - 1 - j) * nx + i) * 4, v = phi[k];
-    if (label[k] >= 0) { px[o] = 92; px[o + 1] = 98; px[o + 2] = 106; px[o + 3] = 255; continue; }
+  const px = state.image.data, rgb = [0, 0, 0];
+  for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
+    const v = phi[j * nx + i0 + i], o = ((bh - 1 - j) * bw + i) * 4;
     ramp(clamp01(v / 80), rgb);
-    const blue = clamp01(-v / 1.5) * 0.85;
-    let r = rgb[0] + (74 - rgb[0]) * blue, gg = rgb[1] + (140 - rgb[1]) * blue, b = rgb[2] + (217 - rgb[2]) * blue;
-    // Equipotentials: a level crossed between this node and the next one.
-    const step = Math.abs(v) < 3 ? 0.5 : 10;
-    const right = i + 1 < nx && label[k + 1] < 0 ? phi[k + 1] : v, up = j + 1 < rows && label[k + nx] < 0 ? phi[k + nx] : v;
-    // No lines where there is no field (inside the cup, phi ~ 0 with round-off).
-    const flat = Math.max(Math.abs(v - right), Math.abs(v - up)) < 1e-3;
-    if (!flat && (Math.floor(v / step) !== Math.floor(right / step) || Math.floor(v / step) !== Math.floor(up / step))) {
-      const zero = Math.sign(v) !== Math.sign(right) || Math.sign(v) !== Math.sign(up);
-      const m = zero ? 0.9 : 0.45;
-      r += (236 - r) * m; gg += (222 - gg) * m; b += (200 - b) * m;
-    }
-    px[o] = r; px[o + 1] = gg; px[o + 2] = b; px[o + 3] = 255;
+    const blue = clamp01(-v / 3) * 0.7;
+    px[o] = rgb[0] + (38 - rgb[0]) * blue;
+    px[o + 1] = rgb[1] + (82 - rgb[1]) * blue;
+    px[o + 2] = rgb[2] + (140 - rgb[2]) * blue;
+    px[o + 3] = 255;
   }
-  state.buffer.getContext('2d').putImageData(image, 0, 0);
+  state.buffer.getContext('2d').putImageData(state.image, 0, 0);
+  g.fillStyle = 'rgb(14, 22, 31)'; g.fillRect(0, 0, w, h);
   g.imageSmoothingEnabled = true;
-  g.drawImage(state.buffer, 0, 0, w, h);
+  g.drawImage(state.buffer, X((i0 - 0.5) * H), Y((bh - 0.5) * H), bw * k * H, bh * k * H);
+
+  // Plasma side below the source diaphragm: the potential of the source.
+  const plasma = g.createLinearGradient(0, Y(0), 0, h);
+  plasma.addColorStop(0, `rgba(240, 170, 120, ${0.35 * volts.source / 80})`);
+  plasma.addColorStop(1, `rgba(214, 76, 80, ${0.6 * volts.source / 80})`);
+  g.fillStyle = plasma; g.fillRect(0, Y(0), w, h - Y(0));
+
+  // Equipotentials.
+  const lines = (levels, style, width) => {
+    g.beginPath();
+    for (const v of levels) contour(g, phi, nx, i0, i1, 0, j1, v, X, Y, H);
+    g.strokeStyle = style; g.lineWidth = width; g.stroke();
+  };
+  g.lineCap = 'round';
+  lines(LEVELS.filter((v) => v > 3 && v % 20 !== 0), 'rgba(236, 220, 198, 0.28)', 1);
+  lines(LEVELS.filter((v) => v > 3 && v % 20 === 0), 'rgba(236, 220, 198, 0.55)', 1.2);
+  lines(LEVELS.filter((v) => v < 3), 'rgba(150, 196, 240, 0.45)', 1);
+  lines([0], 'rgba(246, 242, 234, 0.9)', 1.6);
+
+  // Electrodes: the CAD section, the electrode being changed in red.
+  const shift = field.axisX - field.x0;
+  for (const part of field.outlines()) {
+    const active = part.id === phase;
+    g.beginPath();
+    for (const loop of part.loops) {
+      g.moveTo(X(loop[0] + shift), Y(loop[1]));
+      for (let n = 2; n < loop.length; n += 2) g.lineTo(X(loop[n] + shift), Y(loop[n + 1]));
+      g.closePath();
+    }
+    g.fillStyle = active ? 'rgb(120, 52, 58)' : part.id === 'ground' ? 'rgb(58, 64, 72)' : 'rgb(84, 92, 102)';
+    g.fill('evenodd');
+    g.strokeStyle = active ? '#e0787b' : 'rgba(234, 212, 183, 0.5)';
+    g.lineWidth = active ? 1.5 : 1;
+    g.stroke();
+  }
+
+  // Slit axis.
+  g.setLineDash([4, 5]); g.strokeStyle = 'rgba(234, 212, 183, 0.3)'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.stroke(); g.setLineDash([]);
+
+  // Voltage of each electrode beside its plate, right of the slit.
+  g.font = `500 12px ${FONT}`;
+  g.textBaseline = 'middle';
+  for (const span of field.spans) {
+    const id = { source_diaphragm: 'source', accelerating_diaphragm: 'accel', suppressor_diaphragm: 'suppressor' }[span.key];
+    const text = `${SHORT_NAMES[id]} · ${kv(volts[id])}`, x = w / 2 + 14, y = Y(span.y1) - 9;
+    g.fillStyle = 'rgba(11, 17, 23, 0.7)';
+    g.fillRect(x - 5, y - 9, g.measureText(text).width + 10, 18);
+    g.fillStyle = id === phase ? '#f0b6a0' : INK;
+    g.fillText(text, x, y);
+  }
+
   // Darken the top so the caption reads.
-  const fade = g.createLinearGradient(0, 0, 0, 84);
-  fade.addColorStop(0, 'rgba(11, 17, 23, 0.85)'); fade.addColorStop(1, 'rgba(11, 17, 23, 0)');
-  g.fillStyle = fade; g.fillRect(0, 0, w, 84);
+  const fade = g.createLinearGradient(0, 0, 0, 76);
+  fade.addColorStop(0, 'rgba(11, 17, 23, 0.9)'); fade.addColorStop(1, 'rgba(11, 17, 23, 0)');
+  g.fillStyle = fade; g.fillRect(0, 0, w, 76);
   const key = phase || 'accel';
   caption(g, VOLT_NAMES[key], kv(volts[key]), !!phase);
 }

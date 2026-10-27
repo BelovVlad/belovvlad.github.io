@@ -30,6 +30,7 @@ const VERTEX = `
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 // Colour: potential on a fixed 0..uMax kV scale; negative potential in blue.
 // Lines: every 10 kV, every 0.5 kV within ±3 kV, the 0 V line brighter.
+// The domain fades out at its open sides and far end.
 const FRAGMENT = `
   uniform sampler2D uBasis; uniform vec3 uV; uniform float uMax; uniform float uOpacity;
   varying vec2 vUv;
@@ -43,7 +44,7 @@ const FRAGMENT = `
     vec4 b = texture2D(uBasis, vUv);
     float phi = dot(b.rgb, uV);
     vec3 c = ramp(clamp(phi / uMax, 0.0, 1.0));
-    c = mix(c, vec3(0.29, 0.55, 0.85), clamp(-phi / 1.5, 0.0, 1.0) * 0.85);
+    c = mix(c, vec3(0.15, 0.32, 0.55), clamp(-phi / 3.0, 0.0, 1.0) * 0.7);
     // No lines where there is no field (inside the cup): phi ~ 0 everywhere there.
     float field = step(2e-4, fwidth(phi));
     float major = line(phi / 10.0) * field;
@@ -53,7 +54,9 @@ const FRAGMENT = `
     c = mix(c, vec3(0.96, 0.95, 0.92), zero * 0.9);
     vec3 cap = mix(vec3(0.40, 0.43, 0.47), ramp(clamp(phi / uMax, 0.0, 1.0)), 0.35);
     c = mix(c, cap, smoothstep(0.3, 0.7, b.a));
-    gl_FragColor = vec4(c, uOpacity);
+    // Soft edges of the domain: the open sides, the plasma side and the far end in the cup.
+    float edge = smoothstep(0.0, 0.06, vUv.x) * smoothstep(1.0, 0.94, vUv.x) * smoothstep(0.0, 0.04, vUv.y) * smoothstep(1.0, 0.7, vUv.y);
+    gl_FragColor = vec4(c, uOpacity * mix(edge, 1.0, smoothstep(0.3, 0.7, b.a)));
   }`;
 
 // Section of a mesh by the plane z = zs: segments [x1, y1, x2, y2] (assembly mm).
@@ -164,6 +167,42 @@ class Field {
     const fy = Math.min(Math.max((y - this.y0) / grid.h, 0), grid.ny - 1.001);
     const i = Math.floor(fx), j = Math.floor(fy), a = fx - i, c = fy - j, k = j * grid.nx + i;
     return (u[k] * (1 - a) + u[k + 1] * a) * (1 - c) + (u[k + grid.nx] * (1 - a) + u[k + grid.nx + 1] * a) * c;
+  }
+
+  // Closed outlines of the parts in the section plane, for 2D drawings:
+  // [{ id: electrode id or 'ground', loops: [[x, y, x, y, ...], ...] }], mm from
+  // (axisX, y0). Segments of the mesh section are chained end to end.
+  outlines() {
+    if (this._outlines) return this._outlines;
+    const groups = ELECTRODES.map((e) => ({ id: e.id, parts: e.parts })).concat([{ id: 'ground', parts: GROUND }]);
+    const key = (x, y) => `${Math.round(x * 1e3)},${Math.round(y * 1e3)}`;
+    this._outlines = groups.map((group) => {
+      const loops = [];
+      for (const part of group.parts) {
+        const mesh = this.engine.shown(part);
+        if (!mesh) continue;
+        const segments = sectionSegments(mesh, this.zSlice), ends = new Map(), used = new Uint8Array(segments.length);
+        segments.forEach((s, n) => {
+          for (const k of [key(s[0], s[1]), key(s[2], s[3])]) (ends.get(k) || ends.set(k, []).get(k)).push(n);
+        });
+        for (let n = 0; n < segments.length; n++) {
+          if (used[n]) continue;
+          used[n] = 1;
+          const loop = [segments[n][0], segments[n][1], segments[n][2], segments[n][3]];
+          for (;;) {
+            const x = loop[loop.length - 2], y = loop[loop.length - 1];
+            const next = (ends.get(key(x, y)) || []).find((m) => !used[m]);
+            if (next === undefined) break;
+            used[next] = 1;
+            const s = segments[next], forward = key(s[0], s[1]) === key(x, y);
+            loop.push(forward ? s[2] : s[0], forward ? s[3] : s[1]);
+          }
+          if (loop.length >= 8) loops.push(loop.map((v, i) => (i % 2 ? v - this.y0 : v - this.axisX)));
+        }
+      }
+      return { id: group.id, loops };
+    });
+    return this._outlines;
   }
 
   // Advances the solve for up to `ms` milliseconds; true once the field is ready.

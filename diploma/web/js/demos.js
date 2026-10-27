@@ -244,9 +244,9 @@ function axisChart(slot) {
   const root = document.createElement('div');
   root.className = 'axis-chart';
   root.innerHTML = '<div class="axis-head"><span>Потенциал на оси пучка</span><b></b></div>';
-  const W = 400, L = 40, R = 392, plots = [{ top: 6, bottom: 62, min: 0, max: 80, ticks: [0, 40, 80] },
-    { top: 76, bottom: 120, min: -3, max: 1, ticks: [-3, -1, 1] }];
-  const chart = svg('svg', { viewBox: `0 0 ${W} 140`, role: 'img', 'aria-label': 'Потенциал на оси пучка' }, root);
+  const W = 400, L = 40, R = 392, plots = [{ top: 6, bottom: 48, min: 0, max: 80, ticks: [0, 40, 80] },
+    { top: 60, bottom: 96, min: -3, max: 1, ticks: [-3, -1, 1] }];
+  const chart = svg('svg', { viewBox: `0 0 ${W} 114`, role: 'img', 'aria-label': 'Потенциал на оси пучка' }, root);
   const bands = svg('g', { class: 'axis-bands' }, chart);
   const curves = plots.map((p) => {
     for (const tick of p.ticks) {
@@ -261,7 +261,7 @@ function axisChart(slot) {
     }
     return svg('path', { class: 'axis-curve' }, chart);
   });
-  svg('text', { x: L, y: 137, class: 'axis-tick' }, chart).textContent = 'кВ · по оси от диафрагмы источника, мм →';
+  svg('text', { x: L, y: 111, class: 'axis-tick' }, chart).textContent = 'кВ · по оси от диафрагмы источника, мм →';
   slot.append(root);
   let spansDrawn = false;
   return {
@@ -269,7 +269,7 @@ function axisChart(slot) {
       const profile = field.axis(volts), sx = (y) => L + y / field.length * (R - L);
       if (!spansDrawn) {
         for (const span of field.spans)
-          svg('rect', { x: sx(span.y0), width: sx(span.y1) - sx(span.y0), y: 4, height: 118 }, bands);
+          svg('rect', { x: sx(span.y0), width: sx(span.y1) - sx(span.y0), y: 4, height: 94 }, bands);
         spansDrawn = true;
       }
       plots.forEach((p, i) => {
