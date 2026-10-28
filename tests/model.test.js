@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import defaults from '../config.js';
+import defaults, { DIPLOMA_URL } from '../config.js';
 import { clone, validateConfig, safeUrl, filterResources, moveResource, migrateConfig } from '../model.js';
 
 test('default config and JSON round-trip retain actual links and drafts', () => {
@@ -52,7 +52,7 @@ test('old collections retire only the abandoned seed and preserve custom data', 
   assert.equal(migrated.resources.some(r=>r.id==='darknotes'),false);
   assert.equal(migrated.resources.some(r=>r.id==='custom'),true);
   assert.deepEqual(migrated.todos,old.todos);
-  assert.equal(migrated.revision,5);
+  assert.equal(migrated.revision,6);
   assert.equal(migrateConfig(migrated),migrated);
   old.resources.find(r=>r.id==='darknotes').url='https://example.com/renamed';
   assert.equal(migrateConfig(validateConfig(old)).resources.some(r=>r.id==='darknotes'),true);
@@ -73,13 +73,13 @@ test('revision 2 collections gain Diploma without overwriting personal data or d
 });
 
 const presentationCard={id:'diploma-presentation',title:'Презентация диплома',description:'',url:'https://belovvlad.github.io/diploma/web/',category:'diploma',icon:'code',favorite:false};
-test('revision 3 Diploma cards move from Sites to GitHub Pages and keep personal edits',()=>{
+test('revision 3 Diploma cards move from Sites to the protected site and keep personal edits',()=>{
   const old=clone(defaults);old.revision=3;
   old.resources.push({...presentationCard,url:'https://pweb-diploma.swoonybard26.chatgpt.site/web/'});
   const materials=old.resources.find(r=>r.id==='diploma-materials');materials.url='https://pweb-diploma.swoonybard26.chatgpt.site/';materials.title='Мои материалы';
   const next=migrateConfig(validateConfig(old));
-  assert.equal(next.revision,5);
-  assert.equal(next.resources.find(r=>r.id==='diploma-materials').url,'https://belovvlad.github.io/diploma/');
+  assert.equal(next.revision,6);
+  assert.equal(next.resources.find(r=>r.id==='diploma-materials').url,DIPLOMA_URL);
   assert.equal(next.resources.find(r=>r.id==='diploma-materials').title,'Мои материалы');
   assert.equal(next.resources.some(r=>r.url.includes('chatgpt.site')||r.id==='diploma-presentation'),false);
 });
@@ -92,4 +92,13 @@ test('revision 4 retires the presentation card and refreshes only untouched Dipl
   assert.equal(next.resources.some(r=>r.url==='https://belovvlad.github.io/diploma/web/'),false);
   assert.equal(next.resources.find(r=>r.id==='diploma-materials').description,defaults.resources.find(r=>r.id==='diploma-materials').description);
   assert.equal(next.categories.find(c=>c.id==='diploma').description,'Свой текст');
+});
+test('revision 5 cards leave the former public Diploma copy for the protected site',()=>{
+  const old=clone(defaults);old.revision=5;
+  const materials=old.resources.find(r=>r.id==='diploma-materials');materials.url='https://belovvlad.github.io/diploma/';materials.title='Мои материалы';
+  old.resources.push({id:'mine',title:'Отчёт',description:'',url:'https://belovvlad.github.io/diploma/viewer/pdfjs/viewer.html',category:'diploma',icon:'book',favorite:true});
+  const next=migrateConfig(validateConfig(old));
+  assert.equal(next.revision,6);
+  assert.deepEqual(next.resources.filter(r=>r.category==='diploma').map(r=>[r.title,r.url]),[['Мои материалы',DIPLOMA_URL],['Отчёт',DIPLOMA_URL]]);
+  assert.equal(next.resources.some(r=>r.url.includes('github.io/diploma')),false);
 });

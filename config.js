@@ -1,7 +1,9 @@
-export const CURRENT_REVISION = 5;
+export const CURRENT_REVISION = 6;
+// The Diploma site is hosted apart from this public hub and asks for a password on every entry.
+export const DIPLOMA_URL = 'https://pweb-diploma.pages.dev/';
 export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'Литература, отчёт и разработка дипломной работы', icon:'folder' };
 export const DIPLOMA_RESOURCES = [
-  { id:'diploma-materials', title:'Материалы диплома', description:'Литература, отчёт и разработка. Презентация открывается со страницы диплома.', url:'https://belovvlad.github.io/diploma/', category:'diploma', icon:'book', favorite:false }
+  { id:'diploma-materials', title:'Материалы диплома', description:'Литература, отчёт и разработка. Презентация открывается со страницы диплома.', url:DIPLOMA_URL, category:'diploma', icon:'book', favorite:false }
 ];
 // Revision 5: the presentation card is retired (the Diploma page links to it),
 // and untouched seed descriptions are refreshed.
@@ -12,6 +14,8 @@ export const DIPLOMA_MOVED = {
   'https://pweb-diploma.swoonybard26.chatgpt.site/':'https://belovvlad.github.io/diploma/',
   'https://pweb-diploma.swoonybard26.chatgpt.site/web/':'https://belovvlad.github.io/diploma/web/'
 };
+// Revision 6: cards saved with the former public copy move to the protected site.
+export const DIPLOMA_PUBLIC_COPY = 'https://belovvlad.github.io/diploma/';
 // Sites on this origin whose content the hub search also looks through.
 export const SITE_SEARCH = [
   { id:'nsu-s1', name:'НГУ · 4 курс, 1 семестр', base:'/NSU_FP_Y4_S1/docs/' }

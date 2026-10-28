@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import defaults from '../config.js';
+import defaults, { CURRENT_REVISION } from '../config.js';
 const storageKey = 'pweb.home.v1';
 const libraryCard = (page,id) => page.locator(`#resources .resource-card[data-id="${id}"]`);
 const form = page => page.locator('#resource-form');
@@ -106,7 +106,7 @@ test('existing browser collections migrate once without losing personal links or
   await expect(page.locator('body')).not.toContainText('DarkNotes');
   await expect(libraryCard(page,'my-link')).toBeVisible();
   const stored=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),storageKey);
-  expect(stored.revision).toBe(5);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
+  expect(stored.revision).toBe(CURRENT_REVISION);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
   await page.reload();await showAll(page);await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
 });
 

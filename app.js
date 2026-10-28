@@ -46,7 +46,8 @@ function save(message) {
   if (saved) { $('#save-status').innerHTML = '<span class="status-dot"></span>Сохранено в этом браузере'; if (message) notify(message); }
   render();
 }
-function targetAttrs() { return config.settings.newTab ? 'target="_blank" rel="noopener noreferrer"' : ''; }
+// No noreferrer: the Diploma site only opens for visitors arriving from this hub.
+function targetAttrs() { return config.settings.newTab ? 'target="_blank" rel="noopener"' : ''; }
 function categoryName(id) { return config.categories.find(c => c.id === id)?.name || ''; }
 function navButton(id, name, glyph, count) { return `<button class="nav-button ${selected === id ? 'active' : ''}" data-category="${escape(id)}" ${selected === id ? 'aria-current="page"' : ''}>${icon(glyph)}<span>${escape(name)}</span><span class="nav-count">${count}</span></button>`; }
 function renderNavigation() {
