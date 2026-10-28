@@ -10,6 +10,7 @@ async function menu(page,id,action) {
   await card.locator('[data-action="menu"]').click();
   await card.getByRole('button',{name:action,exact:true}).click();
 }
+const showAll = page => page.locator('#navigation [data-category=all]').click();
 async function addResource(page,title='Новый проект') {
   await page.locator('#add-resource').click();
   await form(page).getByRole('textbox',{name:'Название',exact:true}).fill(title);
@@ -17,7 +18,14 @@ async function addResource(page,title='Новый проект') {
   await form(page).locator('[name=description]').fill('Важное описание');
   await form(page).getByRole('button',{name:'Сохранить',exact:true}).click();
 }
-test.beforeEach(async ({page}) => { await page.goto('/'); });
+test.beforeEach(async ({page}) => { await page.goto('/'); await showAll(page); });
+
+test('home opens on favorites and searches the whole collection',async ({page}) => {
+  await page.reload();
+  await expect(page.locator('#navigation [data-category=favorites]')).toHaveAttribute('aria-current','page');
+  await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.filter(r=>r.favorite).length);
+  await page.locator('#search').fill('GitHub');await expect(libraryCard(page,'github')).toBeVisible();
+});
 
 test('real links, draft, search, empty category and keyboard shortcut',async ({page}) => {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -93,13 +101,13 @@ test('existing browser collections migrate once without losing personal links or
   old.resources.push({id:'darknotes',title:'DarkNotes',description:'',url:'https://belovvlad.github.io/DarkNotes/',category:'tools',icon:'pen',favorite:true});
   old.resources.push({id:'my-link',title:'Личная ссылка',description:'',url:'https://example.com/',category:'projects',icon:'code',favorite:true});
   old.todos.push({id:'existing-task',text:'Старая задача',done:true});
-  await page.evaluate(([key,value])=>localStorage.setItem(key,JSON.stringify(value)),[storageKey,old]);await page.reload();
+  await page.evaluate(([key,value])=>localStorage.setItem(key,JSON.stringify(value)),[storageKey,old]);await page.reload();await showAll(page);
   await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
   await expect(page.locator('body')).not.toContainText('DarkNotes');
   await expect(libraryCard(page,'my-link')).toBeVisible();
   const stored=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),storageKey);
   expect(stored.revision).toBe(5);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
-  await page.reload();await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
+  await page.reload();await showAll(page);await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
 });
 
 test('settings tabs support keyboard navigation and fit narrow screens',async ({page}) => {

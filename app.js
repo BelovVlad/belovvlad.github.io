@@ -6,7 +6,7 @@ import { icon } from './icons.js';
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const iconNames = { book:'Книга', code:'Код', tool:'Инструмент', link:'Ссылка', user:'Личное', pen:'Перо', github:'GitHub', globe:'Глобус', folder:'Папка', star:'Звезда' };
-let config = clone(defaults), selected = 'all', query = '', editingResource = null, editingCategory = null, toastTimer, pendingImport, loadWarning = '', storageBlocked = false;
+let config = clone(defaults), selected = 'favorites', query = '', editingResource = null, editingCategory = null, toastTimer, pendingImport, loadWarning = '', storageBlocked = false;
 try {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
@@ -87,7 +87,9 @@ function scheduleSiteSearch() {
 }
 function renderResources() { renderResourceCards(); scheduleSiteSearch(); }
 function renderResourceCards() {
-  const results = filterResources(config, {query, category:['all','favorites'].includes(selected) ? 'all' : selected, favorites:selected === 'favorites'});
+  // Поиск из «Избранного» идёт по всей коллекции
+  const scope = selected === 'favorites' && query.trim() ? 'all' : selected;
+  const results = filterResources(config, {query, category:['all','favorites'].includes(scope) ? 'all' : scope, favorites:scope === 'favorites'});
   $('#resource-count').textContent = results.length;
   $('#library-title').firstChild.textContent = query.trim() ? 'Поиск ' : selected === 'all' ? 'Ресурсы ' : selected === 'favorites' ? 'Избранное ' : categoryName(selected) + ' ';
   $('#resources').classList.toggle('list-view', config.settings.view === 'list');
@@ -97,8 +99,8 @@ function renderResourceCards() {
     $('#resources').innerHTML = ordered.map(r => resourceCard(r)).join('');
     return;
   }
-  const matching = config.categories.filter(c => (selected === 'all' || selected === c.id) && [c.name,c.description].join(' ').toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')));
-  if (selected !== 'favorites' && matching.length && (query.trim() || selected !== 'all')) {
+  const matching = config.categories.filter(c => (scope === 'all' || scope === c.id) && [c.name,c.description].join(' ').toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')));
+  if (scope !== 'favorites' && matching.length && (query.trim() || scope !== 'all')) {
     $('#resources').innerHTML = matching.map(c => `<div class="empty-state" data-category-section="${escape(c.id)}">${icon(c.icon)}<h3>${escape(c.name)}</h3><p>В разделе пока нет ресурсов.</p><button class="button" data-add-to="${escape(c.id)}">${icon('plus')}Добавить ресурс</button></div>`).join('');
     return;
   }
