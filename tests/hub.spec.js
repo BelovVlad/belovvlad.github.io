@@ -98,7 +98,7 @@ test('existing browser collections migrate once without losing personal links or
   await expect(page.locator('body')).not.toContainText('DarkNotes');
   await expect(libraryCard(page,'my-link')).toBeVisible();
   const stored=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),storageKey);
-  expect(stored.revision).toBe(4);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
+  expect(stored.revision).toBe(5);expect(stored.todos).toEqual(old.todos);expect(stored.resources.some(r=>r.id==='darknotes')).toBe(false);
   await page.reload();await expect(page.locator('.resource-card')).toHaveCount(defaults.resources.length+1);
 });
 
@@ -112,15 +112,14 @@ test('settings tabs support keyboard navigation and fit narrow screens',async ({
   await page.locator('#theme-select').selectOption('light');await page.screenshot({path:'test-results/settings-320-light.png'});
 });
 
-test('Diploma is added to an existing collection and links to materials and presentation',async ({page})=>{
+test('Diploma is added to an existing collection and links to its materials',async ({page})=>{
   const old=structuredClone(defaults);old.revision=2;
   old.categories=old.categories.filter(c=>c.id!=='diploma');old.resources=old.resources.filter(r=>r.category!=='diploma');
   await page.evaluate(([key,value])=>localStorage.setItem(key,JSON.stringify(value)),[storageKey,old]);await page.reload();
   await page.locator('#navigation [data-category=diploma]').click();
-  await expect(page.locator('.resource-card')).toHaveCount(2);
+  await expect(page.locator('.resource-card')).toHaveCount(1);
   await expect(libraryCard(page,'diploma-materials').locator('a')).toHaveAttribute('href',defaults.resources.find(r=>r.id==='diploma-materials').url);
-  await expect(libraryCard(page,'diploma-presentation').locator('a')).toHaveAttribute('href',defaults.resources.find(r=>r.id==='diploma-presentation').url);
-  await page.reload();await page.locator('#navigation [data-category=diploma]').click();await expect(page.locator('.resource-card')).toHaveCount(2);
+  await page.reload();await page.locator('#navigation [data-category=diploma]').click();await expect(page.locator('.resource-card')).toHaveCount(1);
 });
 
 test('JSON export and confirmed import preserve collection and tasks',async ({page}) => {

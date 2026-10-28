@@ -1,9 +1,12 @@
-export const CURRENT_REVISION = 4;
-export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'PDF-материалы, пояснения и презентация дипломной работы', icon:'folder' };
+export const CURRENT_REVISION = 5;
+export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'Литература, отчёт и разработка дипломной работы', icon:'folder' };
 export const DIPLOMA_RESOURCES = [
-  { id:'diploma-materials', title:'Материалы диплома', description:'PDF с пояснениями, расчётами и дополнительными материалами.', url:'https://belovvlad.github.io/diploma/', category:'diploma', icon:'book', favorite:false },
-  { id:'diploma-presentation', title:'Презентация диплома', description:'Экстракционный узел ионного источника. Интерактивная 3D-презентация.', url:'https://belovvlad.github.io/diploma/web/', category:'diploma', icon:'code', favorite:false }
+  { id:'diploma-materials', title:'Материалы диплома', description:'Литература, отчёт и разработка. Презентация открывается со страницы диплома.', url:'https://belovvlad.github.io/diploma/', category:'diploma', icon:'book', favorite:false }
 ];
+// Revision 5: the presentation card is retired (the Diploma page links to it),
+// and untouched seed descriptions are refreshed.
+export const DIPLOMA_RETIRED = { id:'diploma-presentation', url:'https://belovvlad.github.io/diploma/web/' };
+export const DIPLOMA_OLD_TEXT = { category:'PDF-материалы, пояснения и презентация дипломной работы', materials:'PDF с пояснениями, расчётами и дополнительными материалами.' };
 // Former Sites hosting; revision 4 moves saved cards to GitHub Pages.
 export const DIPLOMA_MOVED = {
   'https://pweb-diploma.swoonybard26.chatgpt.site/':'https://belovvlad.github.io/diploma/',

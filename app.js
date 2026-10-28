@@ -51,7 +51,7 @@ function categoryName(id) { return config.categories.find(c => c.id === id)?.nam
 function navButton(id, name, glyph, count) { return `<button class="nav-button ${selected === id ? 'active' : ''}" data-category="${escape(id)}" ${selected === id ? 'aria-current="page"' : ''}>${icon(glyph)}<span>${escape(name)}</span><span class="nav-count">${count}</span></button>`; }
 function renderNavigation() {
   const visible = config.categories.filter(c => c.id === selected || config.resources.some(r => r.category === c.id));
-  $('#navigation').innerHTML = navButton('all','Все','home',config.resources.length) + navButton('favorites','Избранное','star',config.resources.filter(r => r.favorite).length) + visible.map(c => navButton(c.id,c.name,c.icon,config.resources.filter(r => r.category === c.id).length)).join('');
+  $('#navigation').innerHTML = navButton('favorites','Избранное','star',config.resources.filter(r => r.favorite).length) + navButton('all','Все','home',config.resources.length) + visible.map(c => navButton(c.id,c.name,c.icon,config.resources.filter(r => r.category === c.id).length)).join('');
 }
 function resourceCard(r) {
   const peers = config.resources.filter(item => item.category === r.category), index = peers.findIndex(item => item.id === r.id);
