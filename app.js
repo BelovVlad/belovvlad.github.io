@@ -1,4 +1,5 @@
-import defaults from './config.js';
+import defaults, { SITE_SEARCH } from './config.js';
+import { materialsSource, highlight } from './site-search.js';
 import { STORAGE_KEY, ICONS, clone, validateConfig, safeUrl, filterResources, moveResource, migrateConfig } from './model.js';
 import { icon } from './icons.js';
 
@@ -57,7 +58,35 @@ function resourceCard(r) {
   const title = r.url ? `<a class="card-link" href="${escape(r.url)}" ${targetAttrs()}>${escape(r.title)}</a>` : `<button class="card-link draft-title" data-action="edit" data-id="${escape(r.id)}">${escape(r.title)}</button>`;
   return `<article class="resource-card" data-id="${escape(r.id)}" data-icon="${r.icon}"><div class="card-top"><span class="resource-icon">${icon(r.icon)}</span><div class="card-actions"><button class="icon-button pin ${r.favorite ? 'active' : ''}" data-action="pin" aria-label="${r.favorite ? 'Убрать из избранного' : 'В избранное'}: ${escape(r.title)}" aria-pressed="${r.favorite}">${icon('star')}</button><button class="icon-button menu-trigger" data-action="menu" aria-label="Действия: ${escape(r.title)}" aria-expanded="false">${icon('more')}</button><div class="card-menu" hidden><button data-action="edit">Редактировать</button><button data-action="up" ${index === 0 ? 'disabled' : ''}>Переместить выше</button><button data-action="down" ${index === peers.length-1 ? 'disabled' : ''}>Переместить ниже</button><button class="danger" data-action="delete">Удалить ресурс</button></div></div></div><h3 class="card-title">${title}</h3><p class="card-description">${escape(r.description)}</p><div class="card-bottom"><span class="resource-tag">${escape(categoryName(r.category))}</span>${r.url ? `<span class="card-domain">${escape(new URL(r.url).hostname.replace(/^www\./, ''))}</span><span class="open-arrow">${icon('arrow')}</span>` : '<span class="draft-tag">Скоро</span><button class="draft-button" data-action="edit">Добавить ссылку →</button>'}</div></article>`;
 }
-function renderResources() {
+const siteSources = SITE_SEARCH.map(materialsSource);
+let siteQuery = '', siteTimer;
+function siteResultsHtml(source, result, q) {
+  const groups = result.groups.slice(0, 6), total = result.groups.reduce((n, g) => n + g.hits.length, 0);
+  const items = groups.map(g => `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs()}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, result.stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, result.stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`).join('');
+  const summary = result.groups.length ? `${result.groups.length} док. · ${total} совп.${result.incomplete ? ' · индекс загружен не полностью' : ''}` : 'В тексте материалов ничего не найдено';
+  return `<div class="site-source"><div class="site-source-head"><h3>${escape(source.name)}</h3><span class="count">${summary}</span>${result.groups.length ? `<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>Все результаты${icon('arrow')}</a>` : ''}</div>${items}</div>`;
+}
+// Content search runs only for a new query; resource re-renders reuse what is shown.
+function scheduleSiteSearch() {
+  const q = query.trim(), box = $('#site-results');
+  if (q === siteQuery) return;
+  siteQuery = q; clearTimeout(siteTimer);
+  if (q.length < 2 || !siteSources.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = `<div class="site-results-head"><h2 id="site-results-title">В материалах сайтов</h2></div>` + siteSources.map(s => `<div class="site-source" data-source="${escape(s.id)}"><div class="site-source-head"><h3>${escape(s.name)}</h3><span class="count">Ищу в тексте…</span></div></div>`).join('');
+  siteTimer = setTimeout(() => siteSources.forEach(async source => {
+    let html;
+    try { html = siteResultsHtml(source, await source.search(q), q); }
+    catch (error) {
+      if (error.name === 'AbortError') return;
+      html = `<div class="site-source"><div class="site-source-head"><h3>${escape(source.name)}</h3><span class="count">Поиск по тексту сейчас недоступен</span><a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>Искать на сайте${icon('arrow')}</a></div></div>`;
+    }
+    if (q !== siteQuery) return;
+    box.querySelector(`[data-source="${CSS.escape(source.id)}"]`)?.replaceWith(Object.assign(document.createElement('template'), { innerHTML:html }).content);
+  }), 250);
+}
+function renderResources() { renderResourceCards(); scheduleSiteSearch(); }
+function renderResourceCards() {
   const results = filterResources(config, {query, category:['all','favorites'].includes(selected) ? 'all' : selected, favorites:selected === 'favorites'});
   $('#resource-count').textContent = results.length;
   $('#library-title').firstChild.textContent = query.trim() ? 'Поиск ' : selected === 'all' ? 'Ресурсы ' : selected === 'favorites' ? 'Избранное ' : categoryName(selected) + ' ';

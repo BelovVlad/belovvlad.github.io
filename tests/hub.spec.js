@@ -33,6 +33,18 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   expect(errors).toEqual([]);
 });
 
+test('content search in other sites degrades to a link when they are unreachable',async ({page}) => {
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/NSU_FP_Y4_S1/**',route=>route.fulfill({status:404,body:'Not found'}));
+  await expect(page.locator('#site-results')).toBeHidden();
+  await page.locator('#search').fill('ф');await expect(page.locator('#site-results')).toBeHidden();
+  await page.locator('#search').fill('десятичной');
+  await expect(page.locator('#site-results')).toContainText('Поиск по тексту сейчас недоступен');
+  await expect(page.locator('#site-results .site-source-all')).toHaveAttribute('href','/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
+  await page.locator('#search').fill('');await expect(page.locator('#site-results')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test('create, edit, reorder, pin, delete and persist resources',async ({page}) => {
   await addResource(page);
   const id=await page.getByRole('heading',{name:'Новый проект',exact:true}).locator('..').getAttribute('data-id');

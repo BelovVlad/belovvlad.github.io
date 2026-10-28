@@ -9,6 +9,10 @@ export const DIPLOMA_MOVED = {
   'https://pweb-diploma.swoonybard26.chatgpt.site/':'https://belovvlad.github.io/diploma/',
   'https://pweb-diploma.swoonybard26.chatgpt.site/web/':'https://belovvlad.github.io/diploma/web/'
 };
+// Sites on this origin whose content the hub search also looks through.
+export const SITE_SEARCH = [
+  { id:'nsu-s1', name:'НГУ · 4 курс, 1 семестр', base:'/NSU_FP_Y4_S1/docs/' }
+];
 
 // Initial resources only. Personal changes are stored in this browser.
 export default {
