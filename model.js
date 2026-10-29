@@ -1,4 +1,4 @@
-import { CURRENT_REVISION, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
+import { CURRENT_REVISION, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -27,7 +27,7 @@ export function validateConfig(value) {
     todoIds.add(t.id);
     return { id:t.id, text:t.text, done:t.done === true };
   });
-  return { version: 1, revision: [2,3,4,5,6].includes(value.revision) ? value.revision : 1, categories, resources, settings: { theme: ['dark', 'light', 'system'].includes(settings.theme) ? settings.theme : 'dark', view: settings.view === 'list' ? 'list' : 'grid', newTab: settings.newTab !== false, showTasks: settings.showTasks === true }, todos };
+  return { version: 1, revision: Number.isInteger(value.revision) && value.revision >= 2 && value.revision <= CURRENT_REVISION ? value.revision : 1, categories, resources, settings: { theme: ['dark', 'light', 'system'].includes(settings.theme) ? settings.theme : 'dark', view: settings.view === 'list' ? 'list' : 'grid', newTab: settings.newTab !== false, showTasks: settings.showTasks === true }, todos };
 }
 
 // Apply additive updates once, preserving user-created links, edits and tasks.
@@ -50,6 +50,7 @@ export function migrateConfig(config) {
     categories = categories.map(c => c.id === DIPLOMA_CATEGORY.id && c.description === DIPLOMA_OLD_TEXT.category ? {...c,description:DIPLOMA_CATEGORY.description} : c);
   }
   if (config.revision < 6) resources = resources.map(r => r.url.startsWith(DIPLOMA_PUBLIC_COPY) ? {...r,url:DIPLOMA_URL} : r);
+  if (config.revision < 7) resources = resources.map(r => r.url.startsWith(DIPLOMA_CLOUDFLARE) ? {...r,url:DIPLOMA_URL} : r);
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }
 

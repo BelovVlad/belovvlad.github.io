@@ -1,6 +1,6 @@
-export const CURRENT_REVISION = 6;
-// The Diploma site is hosted apart from this public hub and asks for a password on every entry.
-export const DIPLOMA_URL = 'https://pweb-diploma.pages.dev/';
+export const CURRENT_REVISION = 7;
+// The Diploma site is its own repository: only encrypted files, opened with a password on every entry.
+export const DIPLOMA_URL = 'https://belovvlad.github.io/diploma/';
 export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'Литература, отчёт и разработка дипломной работы', icon:'folder' };
 export const DIPLOMA_RESOURCES = [
   { id:'diploma-materials', title:'Материалы диплома', description:'Литература, отчёт и разработка. Презентация открывается со страницы диплома.', url:DIPLOMA_URL, category:'diploma', icon:'book', favorite:false }
@@ -16,6 +16,8 @@ export const DIPLOMA_MOVED = {
 };
 // Revision 6: cards saved with the former public copy move to the protected site.
 export const DIPLOMA_PUBLIC_COPY = 'https://belovvlad.github.io/diploma/';
+// Revision 7: the Cloudflare site (blocked in Russia) gives way to the encrypted one above.
+export const DIPLOMA_CLOUDFLARE = 'https://pweb-diploma.pages.dev/';
 // Sites on this origin whose content the hub search also looks through.
 export const SITE_SEARCH = [
   { id:'nsu-s1', name:'НГУ · 4 курс, 1 семестр', base:'/NSU_FP_Y4_S1/docs/' }
