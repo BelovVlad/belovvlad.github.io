@@ -1,4 +1,4 @@
-import { CURRENT_REVISION, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
+import { CURRENT_REVISION, DEPARTMENT_RESOURCE, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -51,6 +51,11 @@ export function migrateConfig(config) {
   }
   if (config.revision < 6) resources = resources.map(r => r.url.startsWith(DIPLOMA_PUBLIC_COPY) ? {...r,url:DIPLOMA_URL} : r);
   if (config.revision < 7) resources = resources.map(r => r.url.startsWith(DIPLOMA_CLOUDFLARE) ? {...r,url:DIPLOMA_URL} : r);
+  if (config.revision < 8 && !resources.some(r => r.id === DEPARTMENT_RESOURCE.id || r.url === DEPARTMENT_RESOURCE.url)) {
+    // Next to the NSU card's section if it was moved; Education by default, the first section otherwise.
+    const home = [resources.find(r => r.id === 'nsu-s1')?.category, DEPARTMENT_RESOURCE.category].find(id => categories.some(c => c.id === id)) ?? categories[0]?.id;
+    if (home) resources.push({...DEPARTMENT_RESOURCE,category:home});
+  }
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }
 

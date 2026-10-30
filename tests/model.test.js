@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import defaults, { DIPLOMA_URL } from '../config.js';
+import defaults, { CURRENT_REVISION, DEPARTMENT_RESOURCE, DIPLOMA_URL } from '../config.js';
 import { clone, validateConfig, safeUrl, filterResources, moveResource, migrateConfig } from '../model.js';
 
 test('default config and JSON round-trip retain actual links and drafts', () => {
@@ -9,10 +9,10 @@ test('default config and JSON round-trip retain actual links and drafts', () => 
 });
 test('search matches titles, descriptions and categories in Russian and English', () => {
   assert.equal(filterResources(defaults,{query:'ФИЗИЧЕСКОГО'}).length,1);
-  assert.equal(filterResources(defaults,{query:'Education'}).length,2);
+  assert.equal(filterResources(defaults,{query:'Education'}).length,3);
   assert.equal(filterResources(defaults,{query:'семестр'}).length,2);
   assert.equal(filterResources(defaults,{category:'tools',query:'Репозитории'}).length,0);
-  assert.equal(filterResources(defaults,{favorites:true}).length,1);
+  assert.equal(filterResources(defaults,{favorites:true}).length,2);
 });
 test('imports reject executable URLs, duplicate IDs and dangling categories', () => {
   for (const url of ['javascript:alert(1)','data:text/html,test','file:///x','//evil.example','https:example.com']) assert.equal(safeUrl(url),false);
@@ -36,7 +36,7 @@ test('imports normalize optional settings and remove unknown properties', () => 
   assert.equal(validated.resources[0].icon,'globe'); assert.equal(validated.unknown,undefined);
 });
 test('reordering swaps category peers even if other categories are interleaved', () => {
-  const config = clone(defaults); config.resources.splice(1,0,config.resources.splice(2,1)[0]);
+  const config = clone(defaults); config.resources=config.resources.filter(r=>r.id!=='department'); config.resources.splice(1,0,config.resources.splice(2,1)[0]);
   assert.equal(moveResource(config,'nsu-s1',1),true);
   assert.deepEqual(config.resources.map(r => r.id),['nsu-s2','diploma-materials','nsu-s1','github']);
   assert.equal(moveResource(config,'nsu-s1',1),false);
@@ -52,7 +52,7 @@ test('old collections retire only the abandoned seed and preserve custom data', 
   assert.equal(migrated.resources.some(r=>r.id==='darknotes'),false);
   assert.equal(migrated.resources.some(r=>r.id==='custom'),true);
   assert.deepEqual(migrated.todos,old.todos);
-  assert.equal(migrated.revision,7);
+  assert.equal(migrated.revision,CURRENT_REVISION);
   assert.equal(migrateConfig(migrated),migrated);
   old.resources.find(r=>r.id==='darknotes').url='https://example.com/renamed';
   assert.equal(migrateConfig(validateConfig(old)).resources.some(r=>r.id==='darknotes'),true);
@@ -66,7 +66,7 @@ test('revision 2 collections gain Diploma without overwriting personal data or d
   assert.equal(next.categories.filter(c=>c.id==='diploma').length,1);
   assert.equal(next.resources.filter(r=>r.category==='diploma').length,1);
   assert.equal(next.resources[0].title,'Мой семестр');assert.deepEqual(next.todos,old.todos);
-  assert.equal(old.resources.length,3);assert.equal(migrateConfig(next),next);
+  assert.equal(old.resources.length,4);assert.equal(migrateConfig(next),next);
   const existing=clone(old);existing.categories.push({id:'my-diploma',name:'Диплом',description:'Мой раздел',icon:'folder'});
   const reused=migrateConfig(existing);assert.equal(reused.categories.filter(c=>c.name==='Диплом').length,1);
   assert.equal(reused.resources.filter(r=>r.category==='my-diploma').length,1);
@@ -78,7 +78,7 @@ test('revision 3 Diploma cards move from Sites to the protected site and keep pe
   old.resources.push({...presentationCard,url:'https://pweb-diploma.swoonybard26.chatgpt.site/web/'});
   const materials=old.resources.find(r=>r.id==='diploma-materials');materials.url='https://pweb-diploma.swoonybard26.chatgpt.site/';materials.title='Мои материалы';
   const next=migrateConfig(validateConfig(old));
-  assert.equal(next.revision,7);
+  assert.equal(next.revision,CURRENT_REVISION);
   assert.equal(next.resources.find(r=>r.id==='diploma-materials').url,DIPLOMA_URL);
   assert.equal(next.resources.find(r=>r.id==='diploma-materials').title,'Мои материалы');
   assert.equal(next.resources.some(r=>r.url.includes('chatgpt.site')||r.id==='diploma-presentation'),false);
@@ -98,7 +98,7 @@ test('revision 5 cards leave the former public Diploma copy for the protected si
   const materials=old.resources.find(r=>r.id==='diploma-materials');materials.url='https://belovvlad.github.io/diploma/';materials.title='Мои материалы';
   old.resources.push({id:'mine',title:'Отчёт',description:'',url:'https://belovvlad.github.io/diploma/viewer/pdfjs/viewer.html',category:'diploma',icon:'book',favorite:true});
   const next=migrateConfig(validateConfig(old));
-  assert.equal(next.revision,7);
+  assert.equal(next.revision,CURRENT_REVISION);
   assert.deepEqual(next.resources.filter(r=>r.category==='diploma').map(r=>[r.title,r.url]),[['Мои материалы',DIPLOMA_URL],['Отчёт',DIPLOMA_URL]]);
   assert.equal(next.resources.some(r=>r.url.includes('github.io/diploma/viewer')),false);
 });
@@ -107,6 +107,16 @@ test('revision 6 cards leave the Cloudflare Diploma site for the encrypted one',
   old.resources.find(r=>r.id==='diploma-materials').url='https://pweb-diploma.pages.dev/';
   old.resources.push({id:'mine',title:'Отчёт',description:'',url:'https://pweb-diploma.pages.dev/viewer/pdfjs/viewer.html',category:'diploma',icon:'book',favorite:true});
   const next=migrateConfig(validateConfig(old));
-  assert.equal(next.revision,7);
+  assert.equal(next.revision,CURRENT_REVISION);
   assert.deepEqual(next.resources.filter(r=>r.category==='diploma').map(r=>r.url),[DIPLOMA_URL,DIPLOMA_URL]);
+});
+
+test('revision 7 collections gain the Department card once, next to the NSU card',()=>{
+  const old=clone(defaults);old.revision=7;old.resources=old.resources.filter(r=>r.id!=='department');
+  old.categories.push({id:'study',name:'Учёба',description:'',icon:'book'});old.resources.find(r=>r.id==='nsu-s1').category='study';
+  const next=migrateConfig(validateConfig(old));
+  assert.deepEqual(next.resources.filter(r=>r.id==='department').map(r=>[r.url,r.category]),[[DEPARTMENT_RESOURCE.url,'study']]);
+  assert.equal(next.revision,CURRENT_REVISION);assert.equal(migrateConfig(next),next);
+  const own=clone(old);own.resources.push({id:'my-dept',title:'Моя кафедра',description:'',url:DEPARTMENT_RESOURCE.url,category:'links',icon:'link',favorite:false});
+  assert.deepEqual(migrateConfig(validateConfig(own)).resources.filter(r=>r.url===DEPARTMENT_RESOURCE.url).map(r=>r.id),['my-dept']);
 });

@@ -34,7 +34,7 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await expect(libraryCard(page,'nsu-s2').locator('a')).toHaveCount(0);
   await page.keyboard.press('Control+k'); await expect(page.locator('#search')).toBeFocused();
   await page.locator('#search').fill('физического');await expect(page.locator('#resources .resource-card')).toHaveCount(1);
-  await page.locator('#search').fill('Education');await expect(page.locator('#resources .resource-card')).toHaveCount(2);
+  await page.locator('#search').fill('Education');await expect(page.locator('#resources .resource-card')).toHaveCount(3);
   await page.locator('#search').fill('Personal');await expect(page.locator('[data-category-section=personal]')).toBeVisible();
   await page.locator('#search').fill('неизвестный ресурс');await expect(page.getByText('Ничего не нашлось')).toBeVisible();
   await page.getByRole('button',{name:'Сбросить поиск'}).click();await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
@@ -61,9 +61,9 @@ test('create, edit, reorder, pin, delete and persist resources',async ({page}) =
   await form(page).getByRole('button',{name:'Сохранить',exact:true}).click();
   await expect(libraryCard(page,id).locator('.pin')).toHaveAttribute('aria-pressed','true');
   await menu(page,id,'Переместить выше');
-  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).resources.filter(r=>r.category==='education').map(r=>r.title),storageKey)).toEqual(['НГУ · 4 курс, 1 семестр','Обновлённый проект','НГУ · 4 курс, 2 семестр']);
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).resources.filter(r=>r.category==='education').map(r=>r.title),storageKey)).toEqual(['НГУ · 4 курс, 1 семестр','НГУ · 4 курс, 2 семестр','Обновлённый проект','Кафедра']);
   await page.reload();await expect(libraryCard(page,id).getByRole('heading')).toHaveText('Обновлённый проект');
-  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).resources.filter(r=>r.category==='education').map(r=>r.title),storageKey)).toEqual(['НГУ · 4 курс, 1 семестр','Обновлённый проект','НГУ · 4 курс, 2 семестр']);
+  expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).resources.filter(r=>r.category==='education').map(r=>r.title),storageKey)).toEqual(['НГУ · 4 курс, 1 семестр','НГУ · 4 курс, 2 семестр','Обновлённый проект','Кафедра']);
   await menu(page,id,'Удалить ресурс');await page.locator('#confirm-accept').click();
   await expect(libraryCard(page,id)).toHaveCount(0);await page.reload();await expect(libraryCard(page,id)).toHaveCount(0);
 });

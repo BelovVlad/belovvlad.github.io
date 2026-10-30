@@ -1,4 +1,4 @@
-export const CURRENT_REVISION = 7;
+export const CURRENT_REVISION = 8;
 // The Diploma site is its own repository: only encrypted files, opened with a password on every entry.
 export const DIPLOMA_URL = 'https://belovvlad.github.io/diploma/';
 export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'Литература, отчёт и разработка дипломной работы', icon:'folder' };
@@ -18,6 +18,8 @@ export const DIPLOMA_MOVED = {
 export const DIPLOMA_PUBLIC_COPY = 'https://belovvlad.github.io/diploma/';
 // Revision 7: the Cloudflare site (blocked in Russia) gives way to the encrypted one above.
 export const DIPLOMA_CLOUDFLARE = 'https://pweb-diploma.pages.dev/';
+// Revision 8: the Department site (course literature, own repository) joins Education.
+export const DEPARTMENT_RESOURCE = { id:'department', title:'Кафедра', description:'Литература курсов кафедры: циклические ускорители, электронная оптика и физика пучков.', url:'https://belovvlad.github.io/Department/', category:'education', icon:'book', favorite:true };
 // Sites on this origin whose content the hub search also looks through.
 export const SITE_SEARCH = [
   { id:'nsu-s1', name:'НГУ · 4 курс, 1 семестр', base:'/NSU_FP_Y4_S1/docs/' }
@@ -38,6 +40,7 @@ export default {
   resources: [
     { id: 'nsu-s1', title: 'НГУ · 4 курс, 1 семестр', description: 'Конспекты, семинары и учебные материалы физического факультета.', url: 'https://belovvlad.github.io/NSU_FP_Y4_S1/', category: 'education', icon: 'book', favorite: true },
     { id: 'nsu-s2', title: 'НГУ · 4 курс, 2 семестр', description: 'Материалы следующего семестра.', url: '', category: 'education', icon: 'book', favorite: false },
+    DEPARTMENT_RESOURCE,
     ...DIPLOMA_RESOURCES,
     { id: 'github', title: 'GitHub', description: 'Репозитории, исходный код и новые идеи.', url: 'https://github.com/BelovVlad', category: 'links', icon: 'github', favorite: false }
   ],
