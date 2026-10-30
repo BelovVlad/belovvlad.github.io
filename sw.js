@@ -4,8 +4,7 @@
 // workers or none) are left to the browser untouched.
 const CACHE = 'pweb-hub-v1';
 const SHELL = ['', 'index.html', 'styles.css', 'app.js', 'model.js', 'config.js', 'icons.js', 'site-search.js',
-  'assets/atom.svg', 'assets/favicon.svg', 'assets/particles-hero.webp', 'assets/fonts/fonts.css',
-  'assets/fonts/roboto-condensed-cyrillic-wght-normal.woff2', 'assets/fonts/roboto-condensed-latin-wght-normal.woff2',
+  'assets/atom.svg', 'assets/favicon.svg', 'assets/particles-hero.webp', 'assets/fonts/roboto-condensed-cyrillic-wght-normal.woff2', 'assets/fonts/roboto-condensed-latin-wght-normal.woff2',
   'assets/fonts/roboto-condensed-latin-ext-wght-normal.woff2'];
 const root = new URL('./', self.location);
 
