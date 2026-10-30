@@ -1,5 +1,5 @@
 import defaults, { SITE_SEARCH } from './config.js';
-import { materialsSource, highlight } from './site-search.js';
+import { materialsSource, highlight, filterGroups, facetValues } from './site-search.js';
 import { STORAGE_KEY, ICONS, clone, validateConfig, safeUrl, filterResources, moveResource, migrateConfig } from './model.js';
 import { icon } from './icons.js';
 
@@ -60,37 +60,84 @@ function resourceCard(r) {
   return `<article class="resource-card" data-id="${escape(r.id)}" data-icon="${r.icon}"><div class="card-top"><span class="resource-icon">${icon(r.icon)}</span><div class="card-actions"><button class="icon-button pin ${r.favorite ? 'active' : ''}" data-action="pin" aria-label="${r.favorite ? 'Убрать из избранного' : 'В избранное'}: ${escape(r.title)}" aria-pressed="${r.favorite}">${icon('star')}</button><button class="icon-button menu-trigger" data-action="menu" aria-label="Действия: ${escape(r.title)}" aria-expanded="false">${icon('more')}</button><div class="card-menu" hidden><button data-action="edit">Редактировать</button><button data-action="up" ${index === 0 ? 'disabled' : ''}>Переместить выше</button><button data-action="down" ${index === peers.length-1 ? 'disabled' : ''}>Переместить ниже</button><button class="danger" data-action="delete">Удалить ресурс</button></div></div></div><h3 class="card-title">${title}</h3><p class="card-description">${escape(r.description)}</p><div class="card-bottom"><span class="resource-tag">${escape(categoryName(r.category))}</span>${r.url ? `<span class="card-domain">${escape(new URL(r.url).hostname.replace(/^www\./, ''))}</span><span class="open-arrow">${icon('arrow')}</span>` : '<span class="draft-tag">Скоро</span><button class="draft-button" data-action="edit">Добавить ссылку →</button>'}</div></article>`;
 }
 const siteSources = SITE_SEARCH.map(materialsSource);
-let siteQuery = '', siteTimer;
-function siteResultsHtml(source, result, q) {
-  const groups = result.groups.slice(0, 6), total = result.groups.reduce((n, g) => n + g.hits.length, 0);
-  const items = groups.map(g => `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs()}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, result.stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, result.stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`).join('');
-  const summary = result.groups.length ? `${result.groups.length} док. · ${total} совп.${result.incomplete ? ' · индекс загружен не полностью' : ''}` : 'В тексте материалов ничего не найдено';
-  return `<div class="site-source"><div class="site-source-head"><h3>${escape(source.name)}</h3><span class="count">${summary}</span>${result.groups.length ? `<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>Все результаты${icon('arrow')}</a>` : ''}</div>${items}</div>`;
+// While searching, the scope chooses what is shown: 'all', 'resources' or one site's id.
+// A chosen site shows its own filters (facets); its results are kept, so switching never re-searches.
+let siteQuery = '', siteTimer, scope = 'all', resourceHits = 0;
+const siteResults = new Map(), facetChoices = {};
+const searching = () => query.trim().length >= 2 && siteSources.length > 0;
+function siteHitHtml(g, stems) {
+  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs()}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
+}
+function facetsHtml(source, groups) {
+  const choices = facetChoices[source.id] ||= {};
+  return source.facets.map(facet => {
+    // Each facet counts documents within the other facets' choices.
+    const others = filterGroups(groups, { ...choices, [facet.key]:'' }), values = facetValues(others, facet.key);
+    if (values.length < 2 && !choices[facet.key]) return '';
+    const chip = (value, label, count) => `<button class="nav-button facet-chip ${(choices[facet.key] || '') === value ? 'active' : ''}" data-facet="${escape(facet.key)}" data-value="${escape(value)}" aria-pressed="${(choices[facet.key] || '') === value}">${escape(label)}<span class="chip-count">${count}</span></button>`;
+    return `<div class="site-facet" role="group" aria-label="${escape(facet.label)}"><span class="site-facet-label">${escape(facet.label)}</span>${chip('', 'Все', others.length)}${values.map(v => chip(v.value, v.value, v.count)).join('')}</div>`;
+  }).join('');
+}
+function siteSourceHtml(source, q) {
+  const entry = siteResults.get(source.id), head = count => `<div class="site-source-head"><h3>${escape(source.name)}</h3><span class="count">${count}</span>`;
+  if (!entry || entry.state === 'loading') return `<div class="site-source" data-source="${escape(source.id)}">${head('Ищу в тексте…')}</div></div>`;
+  if (entry.state === 'error') return `<div class="site-source" data-source="${escape(source.id)}">${head('Поиск по тексту сейчас недоступен')}<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>Искать на сайте${icon('arrow')}</a></div></div>`;
+  const { result } = entry, only = scope === source.id;
+  const groups = only ? filterGroups(result.groups, facetChoices[source.id]) : result.groups;
+  const shown = groups.slice(0, only ? 40 : 6), total = groups.reduce((n, g) => n + g.hits.length, 0);
+  const summary = result.groups.length ? `${groups.length} док. · ${total} совп.${result.incomplete ? ' · индекс загружен не полностью' : ''}` : 'В тексте материалов ничего не найдено';
+  const more = !only && groups.length > shown.length ? `<button class="site-source-more" data-scope="${escape(source.id)}">Ещё ${groups.length - shown.length} док. и фильтры</button>` : '';
+  return `<div class="site-source" data-source="${escape(source.id)}">${head(summary)}${result.groups.length ? `<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>${source.allUrl(q).includes('#search=') ? 'Все результаты' : 'Открыть сайт'}${icon('arrow')}</a>` : ''}</div>${only && result.groups.length ? `<div class="site-facets">${facetsHtml(source, result.groups)}</div>` : ''}${shown.map(g => siteHitHtml(g, result.stems)).join('')}${only && result.groups.length && !groups.length ? '<p class="site-source-empty">Под выбранные фильтры ничего не подходит.</p>' : ''}${more}</div>`;
+}
+function renderSearchScope() {
+  const bar = $('#search-scope');
+  if (!searching()) { bar.hidden = true; bar.innerHTML = ''; return; }
+  const count = source => { const e = siteResults.get(source.id); return e?.state === 'done' ? e.result.groups.length : e?.state === 'error' ? '—' : '…'; };
+  const chip = (id, label, n) => `<button class="nav-button scope-chip ${scope === id ? 'active' : ''}" data-scope="${escape(id)}" aria-pressed="${scope === id}">${escape(label)}${n === '' ? '' : `<span class="chip-count">${n}</span>`}</button>`;
+  bar.hidden = false;
+  bar.innerHTML = chip('all', 'Всё', '') + chip('resources', 'Ресурсы', resourceHits) + siteSources.map(s => chip(s.id, s.label, count(s))).join('');
+}
+function renderSiteResults() {
+  const box = $('#site-results'), q = query.trim();
+  const sources = scope === 'all' ? siteSources : siteSources.filter(s => s.id === scope);
+  box.hidden = !searching() || !sources.length;
+  $('#resources').hidden = searching() && scope !== 'all' && scope !== 'resources';
+  if (box.hidden) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="site-results-head"><h2 id="site-results-title">${scope === 'all' ? 'В материалах сайтов' : 'В материалах: ' + escape(sources[0].name)}</h2></div>` + sources.map(s => siteSourceHtml(s, q)).join('');
 }
 // Content search runs only for a new query; resource re-renders reuse what is shown.
 function scheduleSiteSearch() {
-  const q = query.trim(), box = $('#site-results');
-  if (q === siteQuery) return;
-  siteQuery = q; clearTimeout(siteTimer);
-  if (q.length < 2 || !siteSources.length) { box.hidden = true; box.innerHTML = ''; return; }
-  box.hidden = false;
-  box.innerHTML = `<div class="site-results-head"><h2 id="site-results-title">В материалах сайтов</h2></div>` + siteSources.map(s => `<div class="site-source" data-source="${escape(s.id)}"><div class="site-source-head"><h3>${escape(s.name)}</h3><span class="count">Ищу в тексте…</span></div></div>`).join('');
+  const q = query.trim();
+  if (q === siteQuery) { renderSearchScope(); renderSiteResults(); return; }
+  siteQuery = q; clearTimeout(siteTimer); siteResults.clear();
+  if (!searching()) { scope = 'all'; renderSearchScope(); renderSiteResults(); return; }
+  for (const source of siteSources) siteResults.set(source.id, { state:'loading' });
+  renderSearchScope(); renderSiteResults();
   siteTimer = setTimeout(() => siteSources.forEach(async source => {
-    let html;
-    try { html = siteResultsHtml(source, await source.search(q), q); }
-    catch (error) {
-      if (error.name === 'AbortError') return;
-      html = `<div class="site-source"><div class="site-source-head"><h3>${escape(source.name)}</h3><span class="count">Поиск по тексту сейчас недоступен</span><a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>Искать на сайте${icon('arrow')}</a></div></div>`;
-    }
+    let entry;
+    try { entry = { state:'done', result:await source.search(q) }; }
+    catch (error) { if (error.name === 'AbortError') return; entry = { state:'error' }; }
     if (q !== siteQuery) return;
-    box.querySelector(`[data-source="${CSS.escape(source.id)}"]`)?.replaceWith(Object.assign(document.createElement('template'), { innerHTML:html }).content);
+    siteResults.set(source.id, entry); renderSearchScope(); renderSiteResults();
   }), 250);
 }
+$('#search-scope').addEventListener('click', event => {
+  const button = event.target.closest('[data-scope]'); if (!button) return;
+  scope = button.dataset.scope; renderSearchScope(); renderSiteResults();
+});
+$('#site-results').addEventListener('click', event => {
+  const more = event.target.closest('[data-scope]');
+  if (more) { scope = more.dataset.scope; renderSearchScope(); renderSiteResults(); $('#search-scope').scrollIntoView({ block:'nearest' }); return; }
+  const chip = event.target.closest('[data-facet]'); if (!chip) return;
+  (facetChoices[scope] ||= {})[chip.dataset.facet] = chip.dataset.value;
+  renderSiteResults();
+});
 function renderResources() { renderResourceCards(); scheduleSiteSearch(); }
 function renderResourceCards() {
   // Поиск из «Избранного» идёт по всей коллекции
   const scope = selected === 'favorites' && query.trim() ? 'all' : selected;
   const results = filterResources(config, {query, category:['all','favorites'].includes(scope) ? 'all' : scope, favorites:scope === 'favorites'});
+  resourceHits = results.length;
   $('#resource-count').textContent = results.length;
   $('#library-title').firstChild.textContent = query.trim() ? 'Поиск ' : selected === 'all' ? 'Ресурсы ' : selected === 'favorites' ? 'Избранное ' : categoryName(selected) + ' ';
   $('#resources').classList.toggle('list-view', config.settings.view === 'list');

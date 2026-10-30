@@ -116,6 +116,18 @@ main{width:min(100%,1256px);margin:0 auto;padding:32px 28px 0;min-height:calc(10
 .list-view .card-actions{position:absolute;right:15px;top:28px}
 .list-view .card-bottom{display:none}
 .site-results{margin-top:34px}
+.search-scope{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:-8px 0 20px}
+.search-scope::before{content:"Где искать";margin-right:8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.chip-count{margin-left:2px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.nav-button.active .chip-count{color:var(--cream)}
+.search-scope+#resources[hidden]+.site-results{margin-top:0}
+.site-facets{display:grid;gap:8px;padding:12px 17px;border-bottom:1px solid var(--line2);background:color-mix(in srgb,var(--bg) 35%,transparent)}
+.site-facet{display:flex;flex-wrap:wrap;align-items:center;gap:3px}
+.site-facet-label{min-width:64px;margin-right:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.facet-chip{min-height:28px;padding:4px 10px}
+.site-source-more{display:block;width:100%;padding:11px 17px;border:0;border-top:1px solid var(--line2);background:transparent;color:var(--cream);font:inherit;font-size:11px;text-align:left;cursor:pointer}
+.site-source-more:hover{background:var(--panel2);color:var(--text)}
+.site-source-empty{margin:0;padding:18px 17px;color:var(--muted);font-size:12px}
 .site-results-head h2{font-size:17px;font-weight:500;letter-spacing:-.02em;margin:0 0 14px}
 .site-source{border:1px solid var(--line);border-radius:11px;background:var(--panel);overflow:hidden}
 .site-source+.site-source{margin-top:12px}

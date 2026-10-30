@@ -20,9 +20,14 @@ export const DIPLOMA_PUBLIC_COPY = 'https://belovvlad.github.io/diploma/';
 export const DIPLOMA_CLOUDFLARE = 'https://pweb-diploma.pages.dev/';
 // Revision 8: the Department site (course literature, own repository) joins Education.
 export const DEPARTMENT_RESOURCE = { id:'department', title:'Кафедра', description:'Литература курсов кафедры: циклические ускорители, электронная оптика и физика пучков.', url:'https://belovvlad.github.io/Department/', category:'education', icon:'book', favorite:true };
-// Sites on this origin whose content the hub search also looks through.
+// Sites on this origin whose content the hub search also looks through (their own search
+// worker and index under base). facets are the filters shown when one site is chosen.
 export const SITE_SEARCH = [
-  { id:'nsu-s1', name:'НГУ · 4 курс, 1 семестр', base:'/NSU_FP_Y4_S1/docs/' }
+  { id:'nsu-s1', name:'НГУ · 4 курс, 1 семестр', label:'НГУ', base:'/NSU_FP_Y4_S1/docs/', home:'/NSU_FP_Y4_S1/docs/', searchHash:true,
+    facetsFromPath:true, facets:[{ key:'section', label:'Раздел' }, { key:'subject', label:'Предмет' }],
+    exclude:['ФЭЧ/04_Литератру/PhysRevD.pdf'], skipFolders:['LaTeX'], links:{ 'База/Частицы.ipynb':'particles/' } },
+  { id:'department', name:'Кафедра', label:'Кафедра', base:'/Department/viewer/', home:'/Department/',
+    facets:[{ key:'subject', label:'Курс' }] }
 ];
 
 // Initial resources only. Personal changes are stored in this browser.

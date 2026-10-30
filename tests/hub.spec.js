@@ -44,12 +44,45 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
 test('content search in other sites degrades to a link when they are unreachable',async ({page}) => {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/NSU_FP_Y4_S1/**',route=>route.fulfill({status:404,body:'Not found'}));
+  await page.route('**/Department/**',route=>route.fulfill({status:404,body:'Not found'}));
   await expect(page.locator('#site-results')).toBeHidden();
   await page.locator('#search').fill('ф');await expect(page.locator('#site-results')).toBeHidden();
   await page.locator('#search').fill('десятичной');
   await expect(page.locator('#site-results')).toContainText('Поиск по тексту сейчас недоступен');
-  await expect(page.locator('#site-results .site-source-all')).toHaveAttribute('href','/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
+  await expect(page.locator('#site-results [data-source="nsu-s1"] .site-source-all')).toHaveAttribute('href','/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
+  await expect(page.locator('#site-results [data-source="department"] .site-source-all')).toHaveAttribute('href','/Department/');
   await page.locator('#search').fill('');await expect(page.locator('#site-results')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+// Each site answers with a fake search worker: every listed file matches on page 3.
+async function fakeSite(page,prefix,files){
+  await page.route(`**${prefix}search-index/files.json`,route=>route.fulfill({json:{files}}));
+  await page.route(`**${prefix}search-worker.js`,route=>route.fulfill({contentType:'text/javascript',body:`let files=[];onmessage=e=>{const d=e.data;
+    if(d.type==='init')files=d.files;
+    else if(d.type==='search')postMessage({id:d.id,type:'results',partial:false,stems:[d.query],groups:files.map(f=>({path:f.path,hits:[{page:3,snippet:'про '+d.query}]}))});};`}));
+}
+test('content search chooses a site and narrows it by the filters of that site',async ({page}) => {
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await fakeSite(page,'/NSU_FP_Y4_S1/docs/',[{path:'ТДиСФ/02_Семинары/ТДиСФ_Семинары.pdf',title:'ТДиСФ Семинары'},{path:'ФЭЧ/01_Лекции/ФЭЧ_Лекции.pdf',title:'ФЭЧ Лекции'},{path:'База/Словарик.ipynb',title:'Словарик'}]);
+  await fakeSite(page,'/Department/viewer/',[{path:'files/Курс/Литература/Книга.pdf',title:'Книга',subject:'Курс',section:'Литература'}]);
+  await page.locator('#search').fill('газ');
+  const scope=page.locator('#search-scope');
+  await expect(scope.locator('[data-scope="nsu-s1"]')).toContainText('3');await expect(scope.locator('[data-scope="department"]')).toContainText('1');
+  await expect(page.locator('#resources')).toBeVisible();
+  await scope.locator('[data-scope="nsu-s1"]').click();
+  await expect(page.locator('#resources')).toBeHidden();await expect(page.locator('#site-results [data-source="department"]')).toHaveCount(0);
+  // Sections follow the NSU site's own names, taken from the path.
+  const sections=page.locator('.site-facet').filter({hasText:'Раздел'});
+  await expect(sections).toContainText('Семинары');await expect(sections).toContainText('Справочники');
+  await sections.locator('[data-value="Семинары"]').click();
+  await expect(page.locator('#site-results .site-hit')).toHaveCount(1);
+  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^\/NSU_FP_Y4_S1\/docs\/pdfjs\/viewer\.html\?file=.*page=3/);
+  await scope.locator('[data-scope="department"]').click();
+  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^\/Department\/viewer\/pdfjs\/viewer\.html\?file=files%2F/);
+  await scope.locator('[data-scope="resources"]').click();
+  await expect(page.locator('#site-results')).toBeHidden();await expect(page.locator('#resources')).toBeVisible();
+  await page.locator('#search').fill('');await expect(scope).toBeHidden();await expect(page.locator('#site-results')).toBeHidden();
   expect(errors).toEqual([]);
 });
 

@@ -2,8 +2,18 @@
 // site's own search worker over its own index and links straight into its reader.
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
-// Lecture notes site (NSU_FP_Y4_S1, app in docs/): search-worker.js over search-index/.
-export function materialsSource({ id, name, base }) {
+// The NSU site names subjects and sections by the path (site.js subjectOf/sectionOf);
+// with facetsFromPath the hub's filters show the same names.
+const SECTION_WORDS = [['лекц','Лекции'],['семинар','Семинары'],['лаборатор','Лабораторные'],['месяч','Задачи'],['задач','Задачи'],['литерат','Литература'],['практик','Практика'],['теори','Теория']];
+export function pathFacets(path) {
+  const parts = path.split('/'), qm = parts[0] === 'База' && parts[1] === 'КМ', subject = qm ? 'КМ' : parts[0];
+  if (parts.length === 2) return { subject, section:'Справочники' };
+  const raw = qm ? 'Лекции' : (parts[1] || 'Материалы').replace(/^\d+[_ .-]*/, '').replace(/_/g, ' '), low = raw.toLowerCase();
+  return { subject, section: SECTION_WORDS.find(([word]) => low.includes(word))?.[1] || raw };
+}
+
+// One site from SITE_SEARCH (config.js): base holds search-worker.js, search-index/ and the readers.
+export function materialsSource({ id, name, label, base, home, searchHash = false, facets = [], facetsFromPath = false, exclude = [], skipFolders = [], links = {} }) {
   let filesPromise = null, workerPromise = null, run = 0, pending = null;
   const meta = new Map();
   function files() {
@@ -12,7 +22,7 @@ export function materialsSource({ id, name, base }) {
       return response.json();
     }).then(data => {
       // Same selection as the site's own catalogue.
-      const rows = (data.files || []).filter(x => x?.path && /\.(pdf|ipynb)$/i.test(x.path) && !x.path.includes('/LaTeX/') && x.path !== 'ФЭЧ/04_Литератру/PhysRevD.pdf');
+      const rows = (data.files || []).filter(x => x?.path && /\.(pdf|ipynb)$/i.test(x.path) && !exclude.includes(x.path) && !skipFolders.some(folder => x.path.includes('/' + folder + '/')));
       for (const row of rows) meta.set(row.path, row);
       return rows.map(row => ({ path:row.path, title:row.title || row.path.split('/').pop(), subject:row.subject || '', section:row.section || '', ext:'.' + String(row.type || row.path.split('.').pop()).toLowerCase(), description:'' }));
     }).catch(error => { filesPromise = null; throw error; });
@@ -35,7 +45,7 @@ export function materialsSource({ id, name, base }) {
   }
   function link(path, location, query) {
     const row = meta.get(path) || {}, params = new URLSearchParams({ file:path, subject:row.subject || '', title:row.title || '' });
-    if (path === 'База/Частицы.ipynb') return base + 'particles/';
+    if (links[path]) return base + links[path];
     const pdf = /\.pdf$/i.test(path);
     if (location) params.set(pdf ? 'page' : 'cell', location);
     if (row.version) params.set('v', row.version);
@@ -44,8 +54,8 @@ export function materialsSource({ id, name, base }) {
     return base + (pdf ? 'pdfjs/viewer.html?' : 'notebook/viewer.html?') + params.toString().replace(/\+/g, '%20');
   }
   return {
-    id, name,
-    allUrl: query => base + '#search=' + encodeURIComponent(query),
+    id, name, label: label || name, facets,
+    allUrl: query => searchHash ? home + '#search=' + encodeURIComponent(query) : home,
     async search(query) {
       const current = await ensureWorker();
       pending?.reject(new DOMException('superseded', 'AbortError'));
@@ -57,8 +67,10 @@ export function materialsSource({ id, name, base }) {
         stems, incomplete,
         groups: groups.map(group => {
           const row = meta.get(group.path) || {}, pdf = /\.pdf$/i.test(group.path);
+          const { subject, section } = facetsFromPath ? pathFacets(group.path) : { subject:row.subject || '', section:row.section || '' };
           return {
             title: row.title || group.path.split('/').pop(),
+            subject, section,
             meta: [row.subject, row.section].filter(Boolean).join(' · '),
             badge: row.subject || '',
             url: link(group.path, group.hits[0]?.page || 0, query),
@@ -69,6 +81,18 @@ export function materialsSource({ id, name, base }) {
       };
     }
   };
+}
+
+// Groups of one site's result narrowed by its facet choices, e.g. { subject:'ТДиСФ' }.
+export function filterGroups(groups, choices = {}) {
+  return groups.filter(group => Object.entries(choices).every(([key, value]) => !value || group[key] === value));
+}
+
+// Facet values present in the results with their document counts, in the site's own order of appearance.
+export function facetValues(groups, key) {
+  const counts = new Map();
+  for (const group of groups) if (group[key]) counts.set(group[key], (counts.get(group[key]) || 0) + 1);
+  return [...counts].sort((a, b) => a[0].localeCompare(b[0], 'ru')).map(([value, count]) => ({ value, count }));
 }
 
 // Marks the matched stems, extended to the end of each word, as the materials site does.
