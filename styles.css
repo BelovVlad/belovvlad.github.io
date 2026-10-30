@@ -13,7 +13,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Bahnschrift","DIN Alternate","DIN 2014","Segoe UI",system-ui,sans-serif}
 button,input,select,textarea{font:inherit}
 button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
 button{color:inherit;cursor:pointer;touch-action:manipulation;border:0;border-radius:8px}
@@ -30,14 +30,14 @@ span[data-icon]{display:inline-flex;align-items:center;justify-content:center}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none}
 .brand-mark{display:block;width:39px;height:39px}
 :root[data-theme=light] .brand-mark{filter:brightness(.64) saturate(.8)}
-.brand strong{font:700 24px/1 Georgia,"Times New Roman",serif;color:var(--cream);letter-spacing:-.025em}
+.brand strong{font:700 24px/1 "Bahnschrift","DIN Alternate","DIN 2014","Segoe UI",system-ui,sans-serif;color:var(--cream);letter-spacing:-.025em}
 .searchbox{display:flex;align-items:center;gap:11px;margin-left:auto;max-width:570px;width:100%;min-width:0;height:43px;border:1px solid var(--line);border-radius:9px;padding:0 13px;color:var(--muted);background:var(--bg2)}
 .searchbox>.icon{width:18px;height:18px}
 .searchbox:focus-within{border-color:var(--warm)}
 .searchbox input{width:100%;min-width:0;flex:1;height:100%;padding:0;border:0;background:none;color:var(--text);font-size:12px;outline:none}
 .searchbox input:focus{outline:none}
 input::placeholder,textarea::placeholder{color:var(--muted)}
-kbd{font:10px ui-sans-serif,system-ui,sans-serif;white-space:nowrap;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+kbd{font:10px "Bahnschrift","DIN Alternate","DIN 2014","Segoe UI",system-ui,sans-serif;white-space:nowrap;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
 .icon-button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;padding:0;background:transparent;border:1px solid transparent;color:var(--muted)}
 .icon-button:hover{color:var(--text);background:var(--panel2)}
 .icon-button .icon{width:18px;height:18px}
