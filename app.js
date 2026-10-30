@@ -280,3 +280,5 @@ $('#todos').onchange = event => { const task = config.todos.find(t => t.id === e
 $('#todos').onclick = event => { const button = event.target.closest('[data-delete-todo]'); if (button) { config.todos = config.todos.filter(t => t.id !== button.dataset.deleteTodo); save(); } };
 render();
 if (loadWarning) { $('#save-status').textContent = storageBlocked ? 'Данные не прочитаны · доступен экспорт' : 'Не сохранено · экспортируйте JSON'; notify(loadWarning); }
+// The hub opens without the internet from its worker's copies (sw.js; only the hub's own files).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).catch(() => {});

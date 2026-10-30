@@ -228,3 +228,15 @@ for (const width of [375,820,1024,1440]) test(`responsive layout and controls at
   await expect(libraryCard(page,'nsu-s2').locator('.pin')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#resources .resource-card[data-id=nsu-s2]')).toHaveCount(1);
 });
+
+test.describe('offline', () => {
+  test.use({ serviceWorkers:'allow' });
+  test('the hub opens without the internet after one visit',async ({page,context}) => {
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(libraryCard(page,'nsu-s1')).toBeVisible();
+    await expect(page.locator('.brand-mark')).toHaveJSProperty('complete',true);
+    await context.setOffline(false);
+  });
+});
