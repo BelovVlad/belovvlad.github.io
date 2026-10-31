@@ -14,7 +14,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="./styles.css">
   <!-- The installed app opens on its launch screen: the logo with breathing dots, once per session. -->
-  <script>try{if(matchMedia('(display-mode: standalone)').matches&&!sessionStorage.getItem('pweb.launched')){document.documentElement.classList.add('launching');sessionStorage.setItem('pweb.launched','1')}}catch{}</script>
+  <script>try{if((matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches||navigator.standalone===true)&&!sessionStorage.getItem('pweb.launched')){document.documentElement.classList.add('launching');sessionStorage.setItem('pweb.launched','1')}}catch{}</script>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./hero.js"></script>
   <script defer src="./dots.js"></script>

@@ -3,7 +3,7 @@
 // from any of them gives this one app. Each site keeps its own offline storage: the hub only reads the
 // caches of this origin to show what is saved and sends to НГУ for its «Сохранить все материалы».
 const $ = selector => document.querySelector(selector);
-const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const installed = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
 const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
 let prompt = null;
 

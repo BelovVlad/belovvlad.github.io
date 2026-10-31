@@ -49,7 +49,7 @@ function save(message) {
 // No noreferrer: the Diploma site only opens for visitors arriving from this hub.
 // In the installed app the sites of this origin (НГУ, Кафедра, диплом) are part of the app,
 // so they open in its own window; a new tab would leave the app for the browser.
-const installedApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const installedApp = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
 function targetAttrs(url) {
   const inApp = installedApp() && url && new URL(url, location.href).origin === location.origin;
   return config.settings.newTab && !inApp ? 'target="_blank" rel="noopener"' : '';

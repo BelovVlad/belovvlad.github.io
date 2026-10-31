@@ -5,7 +5,7 @@
   "description": "Хаб, материалы НГУ, Кафедра и диплом в одном приложении. Материалы НГУ можно сохранить для работы без интернета.",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#080d12",
   "theme_color": "#080d12",
   "lang": "ru",
