@@ -97,11 +97,14 @@ main{width:min(100%,1256px);margin:0 auto;padding:28px 28px 0;min-height:calc(10
 #resources{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .resource-card{position:relative;isolation:isolate;min-width:0;display:flex;flex-direction:column;gap:8px;padding:20px 20px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);transition:border-color .2s}
 .resource-card:hover,.resource-card:focus-within{border-color:var(--warm)}
-/* Living dot patches (dots.js draws them like the banner). Hidden until the card is hovered or pinned on;
-   touch screens show one still, fainter frame. */
+/* Living dot patches appear on hover, keyboard focus or touch press; selected items keep theirs on. */
 .dots-canvas{position:absolute;inset:0;z-index:-1;width:100%;height:100%;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s ease}
 .dots-hot>.dots-canvas,.dots-on>.dots-canvas{opacity:1}
-@media(hover:none){.dots-canvas{opacity:.55}}
+@media(hover:none){
+  a,button,summary,[role="button"],.resource-card,.course-card,.knowledge-card,.file-row,.file{
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+  }
+}
 .resource-card.draft{border-style:dashed;background:transparent}
 .resource-card.draft:hover,.resource-card.draft:focus-within{border-color:var(--line)}
 .card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}

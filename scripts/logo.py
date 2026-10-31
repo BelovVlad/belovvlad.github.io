@@ -6,7 +6,7 @@ sphere reads as a volume even small. In the glint the dots are largest and redde
 its edge. Writes into assets/ (or the folder given):
   logo.svg           the mark for headers (transparent)
   logo-tile.svg      source of the "any" app icons: the sphere on a rounded dark tile
-  logo-maskable.svg  source of the maskable icon: full-bleed tile, the sphere inside the 80% safe circle
+  logo-maskable.svg  source of all installed-app icons: opaque splash-colour background, sphere inside the 80% safe circle
   logo-launch.svg    the mark with breathing dots, for the app's launch screen
   favicon-soft.svg   source of the 16 px favicon: the same ball shaded smoothly (dots do not survive 16 px)
 Then `node scripts/icons.mjs` renders the PNGs.
@@ -52,7 +52,7 @@ def svg(box, body, size, extra=''):
 files = {
     'logo.svg': svg('17 17 66 66', sphere(), 66),
     'logo-tile.svg': svg('0 0 100 100', GRADIENT + '<rect width="100" height="100" rx="22" fill="url(#bg)"/>' + sphere(R=36, step=4.4), 512),
-    'logo-maskable.svg': svg('0 0 100 100', GRADIENT + '<rect width="100" height="100" fill="url(#bg)"/>' + sphere(R=36, step=4.4), 512),
+    'logo-maskable.svg': svg('0 0 100 100', f'<rect width="100" height="100" fill="{BG}"/>' + sphere(R=36, step=4.4), 512),
     'logo-launch.svg': svg('17 17 66 66', sphere(animated=True), 66,
         '<style>circle{transform-box:fill-box;transform-origin:center;animation:b 1.6s ease-in-out infinite;animation-delay:calc(var(--d)*-1.2s)}'
         '@keyframes b{50%{transform:scale(.55)}}@media(prefers-reduced-motion:reduce){circle{animation:none}}</style>'),
