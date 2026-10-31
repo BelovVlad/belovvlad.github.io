@@ -1,4 +1,4 @@
-import { CURRENT_REVISION, DEPARTMENT_RESOURCE, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
+import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -18,7 +18,9 @@ export function validateConfig(value) {
     if (!r || !text(r.id, 100, true) || resourceIds.has(r.id) || !text(r.title, 100, true) || !text(r.description ?? '', 300) || !text(r.url, 2048) || !categoryIds.has(r.category)) throw new Error('Проверьте карточки и их разделы.');
     if (r.url && !safeUrl(r.url)) throw new Error('Разрешены только полные ссылки http:// или https://.');
     resourceIds.add(r.id);
-    return { id: r.id, title: r.title.trim(), description: r.description ?? '', url: r.url, category: r.category, icon: ICONS.includes(r.icon) ? r.icon : 'globe', favorite: r.favorite === true };
+    // An optional monogram of up to three characters; without one the card shows the title's initials.
+    const mono = typeof r.mono === 'string' ? r.mono.trim().slice(0, 3) : '';
+    return { id: r.id, title: r.title.trim(), description: r.description ?? '', url: r.url, category: r.category, icon: ICONS.includes(r.icon) ? r.icon : 'globe', favorite: r.favorite === true, ...(mono ? { mono } : {}) };
   });
   const settings = value.settings ?? {};
   const todoIds = new Set();
@@ -55,6 +57,12 @@ export function migrateConfig(config) {
     // Next to the NSU card's section if it was moved; Education by default, the first section otherwise.
     const home = [resources.find(r => r.id === 'nsu-s1')?.category, DEPARTMENT_RESOURCE.category].find(id => categories.some(c => c.id === id)) ?? categories[0]?.id;
     if (home) resources.push({...DEPARTMENT_RESOURCE,category:home});
+  }
+  if (config.revision < 9) {
+    // A section is renamed only if it still has its original name and the new one is free.
+    const taken = name => categories.some(c => c.name.toLocaleLowerCase('ru') === name.toLocaleLowerCase('ru'));
+    categories = categories.map(c => { const rename = CATEGORY_RENAMES[c.id]; return rename && c.name === rename[0] && !taken(rename[1]) ? {...c,name:rename[1]} : c; });
+    resources = resources.map(r => r.id === DRAFT_TEXT.id && !r.url && r.description === DRAFT_TEXT.old ? {...r,description:DRAFT_TEXT.text} : r);
   }
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }

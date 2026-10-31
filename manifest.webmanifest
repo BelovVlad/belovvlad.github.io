@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "PweB",
+  "short_name": "PweB",
+  "description": "Хаб, материалы НГУ, Кафедра и диплом в одном приложении. Материалы НГУ можно сохранить для работы без интернета.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080d12",
+  "theme_color": "#080d12",
+  "lang": "ru",
+  "orientation": "any",
+  "icons": [
+    { "src": "assets/app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/app-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "НГУ · 4 курс", "short_name": "НГУ", "url": "/NSU_FP_Y4_S1/docs/", "icons": [{ "src": "assets/app-192.png", "sizes": "192x192" }] },
+    { "name": "Кафедра", "url": "/Department/", "icons": [{ "src": "assets/app-192.png", "sizes": "192x192" }] },
+    { "name": "Материалы диплома", "short_name": "Диплом", "url": "/diploma/", "icons": [{ "src": "assets/app-192.png", "sizes": "192x192" }] }
+  ]
+}

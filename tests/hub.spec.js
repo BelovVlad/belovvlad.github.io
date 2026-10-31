@@ -34,8 +34,8 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await expect(libraryCard(page,'nsu-s2').locator('a')).toHaveCount(0);
   await page.keyboard.press('Control+k'); await expect(page.locator('#search')).toBeFocused();
   await page.locator('#search').fill('физического');await expect(page.locator('#resources .resource-card')).toHaveCount(1);
-  await page.locator('#search').fill('Education');await expect(page.locator('#resources .resource-card')).toHaveCount(3);
-  await page.locator('#search').fill('Personal');await expect(page.locator('[data-category-section=personal]')).toBeVisible();
+  await page.locator('#search').fill('Учёба');await expect(page.locator('#resources .resource-card')).toHaveCount(3);
+  await page.locator('#search').fill('Личное');await expect(page.locator('[data-category-section=personal]')).toBeVisible();
   await page.locator('#search').fill('неизвестный ресурс');await expect(page.getByText('Ничего не нашлось')).toBeVisible();
   await page.getByRole('button',{name:'Сбросить поиск'}).click();await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   expect(errors).toEqual([]);

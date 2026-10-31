@@ -1,4 +1,4 @@
-import defaults, { SITE_SEARCH } from './config.js';
+import defaults, { SEED_MONOGRAMS, SITE_SEARCH } from './config.js';
 import { materialsSource, highlight, filterGroups, facetValues } from './site-search.js';
 import { STORAGE_KEY, ICONS, clone, validateConfig, safeUrl, filterResources, moveResource, migrateConfig } from './model.js';
 import { icon } from './icons.js';
@@ -47,17 +47,35 @@ function save(message) {
   render();
 }
 // No noreferrer: the Diploma site only opens for visitors arriving from this hub.
-function targetAttrs() { return config.settings.newTab ? 'target="_blank" rel="noopener"' : ''; }
+// In the installed app the sites of this origin (НГУ, Кафедра, диплом) are part of the app,
+// so they open in its own window; a new tab would leave the app for the browser.
+const installedApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function targetAttrs(url) {
+  const inApp = installedApp() && url && new URL(url, location.href).origin === location.origin;
+  return config.settings.newTab && !inApp ? 'target="_blank" rel="noopener"' : '';
+}
 function categoryName(id) { return config.categories.find(c => c.id === id)?.name || ''; }
-function navButton(id, name, glyph, count) { return `<button class="nav-button ${selected === id ? 'active' : ''}" data-category="${escape(id)}" ${selected === id ? 'aria-current="page"' : ''}>${icon(glyph)}<span>${escape(name)}</span><span class="nav-count">${count}</span></button>`; }
+// The section tabs are the heading of the library: name, number of cards, a red line under the chosen one.
+function navButton(id, name, glyph, count) { return `<button class="lib-tab ${selected === id ? 'active' : ''}" data-category="${escape(id)}" ${selected === id ? 'aria-current="page"' : ''}>${escape(name)}<sup>${count}</sup></button>`; }
+// A card's face: its own monogram, the seed one, or the initials of the first two words of the title.
+function autoMonogram(title) {
+  const words = title.split(/[\s·.,:;\-–—()«»"]+/).filter(Boolean);
+  return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toLocaleUpperCase('ru');
+}
+const monogram = r => r.mono || SEED_MONOGRAMS[r.id] || autoMonogram(r.title);
+// The address under the card: host and path, without the scheme and the closing slash.
+function cardPath(url) {
+  const u = new URL(url), path = decodeURIComponent(u.pathname).replace(/\/$/, '');
+  return u.hostname.replace(/^www\./, '') + path;
+}
 function renderNavigation() {
   const visible = config.categories.filter(c => c.id === selected || config.resources.some(r => r.category === c.id));
   $('#navigation').innerHTML = navButton('favorites','Избранное','star',config.resources.filter(r => r.favorite).length) + navButton('all','Все','home',config.resources.length) + visible.map(c => navButton(c.id,c.name,c.icon,config.resources.filter(r => r.category === c.id).length)).join('');
 }
 function resourceCard(r) {
   const peers = config.resources.filter(item => item.category === r.category), index = peers.findIndex(item => item.id === r.id);
-  const title = r.url ? `<a class="card-link" href="${escape(r.url)}" ${targetAttrs()}>${escape(r.title)}</a>` : `<button class="card-link draft-title" data-action="edit" data-id="${escape(r.id)}">${escape(r.title)}</button>`;
-  return `<article class="resource-card" data-id="${escape(r.id)}" data-icon="${r.icon}"><div class="card-top"><span class="resource-icon">${icon(r.icon)}</span><div class="card-actions"><button class="icon-button pin ${r.favorite ? 'active' : ''}" data-action="pin" aria-label="${r.favorite ? 'Убрать из избранного' : 'В избранное'}: ${escape(r.title)}" aria-pressed="${r.favorite}">${icon('star')}</button><button class="icon-button menu-trigger" data-action="menu" aria-label="Действия: ${escape(r.title)}" aria-expanded="false">${icon('more')}</button><div class="card-menu" hidden><button data-action="edit">Редактировать</button><button data-action="up" ${index === 0 ? 'disabled' : ''}>Переместить выше</button><button data-action="down" ${index === peers.length-1 ? 'disabled' : ''}>Переместить ниже</button><button class="danger" data-action="delete">Удалить ресурс</button></div></div></div><h3 class="card-title">${title}</h3><p class="card-description">${escape(r.description)}</p><div class="card-bottom"><span class="resource-tag">${escape(categoryName(r.category))}</span>${r.url ? `<span class="card-domain">${escape(new URL(r.url).hostname.replace(/^www\./, ''))}</span><span class="open-arrow">${icon('arrow')}</span>` : '<span class="draft-tag">Скоро</span><button class="draft-button" data-action="edit">Добавить ссылку →</button>'}</div></article>`;
+  const title = r.url ? `<a class="card-link" href="${escape(r.url)}" ${targetAttrs(r.url)}>${escape(r.title)}</a>` : `<button class="card-link draft-title" data-action="edit" data-id="${escape(r.id)}">${escape(r.title)}</button>`;
+  return `<article class="resource-card${r.url ? '' : ' draft'}" data-id="${escape(r.id)}"><div class="card-top"><span class="mono" aria-hidden="true">${escape(monogram(r))}</span><div class="card-actions"><button class="icon-button pin ${r.favorite ? 'active' : ''}" data-action="pin" aria-label="${r.favorite ? 'Убрать из избранного' : 'В избранное'}: ${escape(r.title)}" aria-pressed="${r.favorite}">${icon('star')}</button><button class="icon-button menu-trigger" data-action="menu" aria-label="Действия: ${escape(r.title)}" aria-expanded="false">${icon('more')}</button><div class="card-menu" hidden><button data-action="edit">Редактировать</button><button data-action="up" ${index === 0 ? 'disabled' : ''}>Переместить выше</button><button data-action="down" ${index === peers.length-1 ? 'disabled' : ''}>Переместить ниже</button><button class="danger" data-action="delete">Удалить ресурс</button></div></div></div><h3 class="card-title">${title}</h3><p class="card-description">${escape(r.description)}</p><div class="card-bottom">${r.url ? `<span class="card-path">${escape(cardPath(r.url))}</span><span class="open-arrow">${icon('arrow')}</span>` : '<span class="card-path">адрес не задан</span>'}</div></article>`;
 }
 const siteSources = SITE_SEARCH.map(materialsSource);
 // While searching, the scope chooses what is shown: 'all', 'resources' or one site's id.
@@ -66,7 +84,7 @@ let siteQuery = '', siteTimer, scope = 'all', resourceHits = 0;
 const siteResults = new Map(), facetChoices = {};
 const searching = () => query.trim().length >= 2 && siteSources.length > 0;
 function siteHitHtml(g, stems) {
-  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs()}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
+  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs(g.url)}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
 }
 function facetsHtml(source, groups) {
   const choices = facetChoices[source.id] ||= {};
@@ -81,13 +99,13 @@ function facetsHtml(source, groups) {
 function siteSourceHtml(source, q) {
   const entry = siteResults.get(source.id), head = count => `<div class="site-source-head"><h3>${escape(source.name)}</h3><span class="count">${count}</span>`;
   if (!entry || entry.state === 'loading') return `<div class="site-source" data-source="${escape(source.id)}">${head('Ищу в тексте…')}</div></div>`;
-  if (entry.state === 'error') return `<div class="site-source" data-source="${escape(source.id)}">${head('Поиск по тексту сейчас недоступен')}<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>Искать на сайте${icon('arrow')}</a></div></div>`;
+  if (entry.state === 'error') return `<div class="site-source" data-source="${escape(source.id)}">${head('Поиск по тексту сейчас недоступен')}<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs(source.allUrl(q))}>Искать на сайте${icon('arrow')}</a></div></div>`;
   const { result } = entry, only = scope === source.id;
   const groups = only ? filterGroups(result.groups, facetChoices[source.id]) : result.groups;
   const shown = groups.slice(0, only ? 40 : 6), total = groups.reduce((n, g) => n + g.hits.length, 0);
   const summary = result.groups.length ? `${groups.length} док. · ${total} совп.${result.incomplete ? ' · индекс загружен не полностью' : ''}` : 'В тексте материалов ничего не найдено';
   const more = !only && groups.length > shown.length ? `<button class="site-source-more" data-scope="${escape(source.id)}">Ещё ${groups.length - shown.length} док. и фильтры</button>` : '';
-  return `<div class="site-source" data-source="${escape(source.id)}">${head(summary)}${result.groups.length ? `<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs()}>${source.allUrl(q).includes('#search=') ? 'Все результаты' : 'Открыть сайт'}${icon('arrow')}</a>` : ''}</div>${only && result.groups.length ? `<div class="site-facets">${facetsHtml(source, result.groups)}</div>` : ''}${shown.map(g => siteHitHtml(g, result.stems)).join('')}${only && result.groups.length && !groups.length ? '<p class="site-source-empty">Под выбранные фильтры ничего не подходит.</p>' : ''}${more}</div>`;
+  return `<div class="site-source" data-source="${escape(source.id)}">${head(summary)}${result.groups.length ? `<a class="site-source-all" href="${escape(source.allUrl(q))}" ${targetAttrs(source.allUrl(q))}>${source.allUrl(q).includes('#search=') ? 'Все результаты' : 'Открыть сайт'}${icon('arrow')}</a>` : ''}</div>${only && result.groups.length ? `<div class="site-facets">${facetsHtml(source, result.groups)}</div>` : ''}${shown.map(g => siteHitHtml(g, result.stems)).join('')}${only && result.groups.length && !groups.length ? '<p class="site-source-empty">Под выбранные фильтры ничего не подходит.</p>' : ''}${more}</div>`;
 }
 function renderSearchScope() {
   const bar = $('#search-scope');
@@ -174,11 +192,11 @@ function openResource(id = null, category = null) {
   closeMenus(); editingResource = id;
   const form = $('#resource-form'); form.reset(); $('#resource-error').textContent = '';
   form.elements.category.innerHTML = config.categories.map(c => `<option value="${escape(c.id)}">${escape(c.name)}</option>`).join('');
-  form.elements.icon.innerHTML = iconOptions();
   const item = config.resources.find(r => r.id === id);
   $('#resource-dialog-title').textContent = item ? 'Редактировать ресурс' : 'Новый ресурс';
-  if (item) for (const name of ['title','description','url','category','icon']) form.elements[name].value = item[name];
-  else { form.elements.category.value = category || (config.categories.some(c => c.id === selected) ? selected : config.categories[0].id); form.elements.icon.value = 'globe'; }
+  if (item) for (const name of ['title','description','url','category']) form.elements[name].value = item[name];
+  else form.elements.category.value = category || (config.categories.some(c => c.id === selected) ? selected : config.categories[0].id);
+  form.elements.mono.value = item?.mono || ''; form.elements.mono.placeholder = item ? (SEED_MONOGRAMS[item.id] || autoMonogram(item.title)) : 'Авто';
   form.elements.favorite.checked = item?.favorite || false;
   $('#resource-dialog').showModal();
 }
@@ -195,8 +213,14 @@ function confirmAction(title, message, action, button = 'Удалить') {
 }
 
 document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-function updateClock() { $('#top-date').textContent = new Intl.DateTimeFormat('ru', { day:'numeric', month:'long', weekday:'long' }).format(new Date()); $('#hero-time').textContent = new Intl.DateTimeFormat('ru', {hour:'2-digit',minute:'2-digit'}).format(new Date()); }
-updateClock(); setInterval(updateClock,30000);
+// The banner: a greeting for the time of day, the clock and the date.
+function updateClock() {
+  const now = new Date(), hour = now.getHours(), date = new Intl.DateTimeFormat('ru', { day:'numeric', month:'long', weekday:'long' }).format(now);
+  $('#greet').textContent = hour < 5 ? 'Доброй ночи' : hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : hour < 23 ? 'Добрый вечер' : 'Доброй ночи';
+  $('#hero-time').textContent = new Intl.DateTimeFormat('ru', { hour:'2-digit', minute:'2-digit' }).format(now);
+  $('#top-date').textContent = date[0].toLocaleUpperCase('ru') + date.slice(1);
+}
+updateClock(); setInterval(updateClock,10000);
 $('#navigation').addEventListener('click', event => { const button = event.target.closest('[data-category]'); if (!button) return; selected = button.dataset.category; query = ''; $('#search').value = ''; render(); });
 $('#search').addEventListener('input', event => { query = event.target.value; renderResources(); });
 $('#search').addEventListener('search', event => { query = event.target.value; renderResources(); });
@@ -237,10 +261,13 @@ document.addEventListener('click', event => {
   if (action === 'up' || action === 'down') { moveResource(config,id,action === 'up' ? -1 : 1); save('Порядок ресурсов изменён'); }
   if (action === 'delete') { closeMenus(); confirmAction('Удалить ресурс?', `«${item.title}» будет удалён из вашей коллекции в этом браузере.`, () => { config.resources = config.resources.filter(r => r.id !== id); save('Ресурс удалён'); }); }
 });
+// Without its own monogram a card shows the title's initials; the placeholder previews them.
+$('#resource-form').elements.title.addEventListener('input', event => { const form = event.target.form; if (!editingResource || !SEED_MONOGRAMS[editingResource]) form.elements.mono.placeholder = event.target.value.trim() ? autoMonogram(event.target.value.trim()) : 'Авто'; });
 $('#resource-form').onsubmit = event => {
   event.preventDefault(); const form = event.target; const url = form.elements.url.value.trim();
   if (url && !safeUrl(url)) { $('#resource-error').textContent = 'Введите полный адрес http:// или https://.'; return; }
-  const item = { id: editingResource || crypto.randomUUID(), title: form.elements.title.value.trim(), description: form.elements.description.value.trim(), url, category: form.elements.category.value, icon: form.elements.icon.value, favorite: form.elements.favorite.checked };
+  const previous = config.resources.find(r => r.id === editingResource), mono = form.elements.mono.value.trim();
+  const item = { id: editingResource || crypto.randomUUID(), title: form.elements.title.value.trim(), description: form.elements.description.value.trim(), url, category: form.elements.category.value, icon: previous?.icon || 'globe', favorite: form.elements.favorite.checked, ...(mono ? { mono } : {}) };
   if (!item.title) { $('#resource-error').textContent = 'Введите название ресурса.'; return; }
   const index = config.resources.findIndex(r => r.id === editingResource);
   if (index >= 0) config.resources[index] = item; else config.resources.push(item);

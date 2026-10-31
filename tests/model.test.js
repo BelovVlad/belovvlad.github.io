@@ -9,7 +9,7 @@ test('default config and JSON round-trip retain actual links and drafts', () => 
 });
 test('search matches titles, descriptions and categories in Russian and English', () => {
   assert.equal(filterResources(defaults,{query:'ФИЗИЧЕСКОГО'}).length,1);
-  assert.equal(filterResources(defaults,{query:'Education'}).length,3);
+  assert.equal(filterResources(defaults,{query:'Учёба'}).length,3);
   assert.equal(filterResources(defaults,{query:'семестр'}).length,2);
   assert.equal(filterResources(defaults,{category:'tools',query:'Репозитории'}).length,0);
   assert.equal(filterResources(defaults,{favorites:true}).length,2);
@@ -119,4 +119,21 @@ test('revision 7 collections gain the Department card once, next to the NSU card
   assert.equal(next.revision,CURRENT_REVISION);assert.equal(migrateConfig(next),next);
   const own=clone(old);own.resources.push({id:'my-dept',title:'Моя кафедра',description:'',url:DEPARTMENT_RESOURCE.url,category:'links',icon:'link',favorite:false});
   assert.deepEqual(migrateConfig(validateConfig(own)).resources.filter(r=>r.url===DEPARTMENT_RESOURCE.url).map(r=>r.id),['my-dept']);
+});
+
+test('revision 8 sections get Russian names unless the user renamed them or took the name',()=>{
+  const old=clone(defaults);old.revision=8;
+  const english={education:'Education',projects:'Projects',tools:'Мои инструменты',links:'Links',personal:'Personal'};
+  for(const c of old.categories)if(english[c.id])c.name=english[c.id];
+  old.categories.push({id:'mine',name:'Ссылки',description:'',icon:'link'});
+  old.resources.find(r=>r.id==='nsu-s2').description='Материалы следующего семестра.';
+  const next=migrateConfig(validateConfig(old));
+  assert.deepEqual(Object.fromEntries(next.categories.map(c=>[c.id,c.name])),{education:'Учёба',diploma:'Диплом',projects:'Проекты',tools:'Мои инструменты',links:'Links',personal:'Личное',mine:'Ссылки'});
+  assert.equal(next.resources.find(r=>r.id==='nsu-s2').description,'Заготовка: адрес появится, когда начнётся семестр.');
+});
+
+test('a monogram of up to three characters survives validation',()=>{
+  const value=clone(defaults);value.resources[0].mono=' НГУФ ';
+  assert.equal(validateConfig(value).resources[0].mono,'НГУ');
+  assert.equal('mono' in validateConfig(clone(defaults)).resources[0],false);
 });

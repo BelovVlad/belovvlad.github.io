@@ -8,38 +8,44 @@
   <meta name="color-scheme" content="dark light">
   <title>Home · PweB</title>
   <link rel="icon" href="./assets/favicon.svg?v=4" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="PweB">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./app.js"></script>
+  <script type="module" src="./hero.js"></script>
+  <script type="module" src="./install.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">К содержимому</a>
   <header class="topbar">
     <a class="brand" href="./" aria-label="PweB — главная"><img class="brand-mark" src="./assets/atom.svg?v=4" alt="" width="38" height="38"><strong>PweB</strong></a>
-    <label class="searchbox"><span data-icon="search"></span><input id="search" type="search" placeholder="Поиск по ресурсам" aria-label="Поиск по хабу" autocomplete="off"><kbd>Ctrl K</kbd></label>
+    <label class="searchbox"><span data-icon="search"></span><input id="search" type="search" placeholder="Поиск по ресурсам и конспектам" aria-label="Поиск по хабу" autocomplete="off"><kbd>Ctrl K</kbd></label>
     <button class="icon-button settings-trigger" id="settings-button" aria-label="Настройки" title="Настройки"><span data-icon="settings"></span></button>
   </header>
   <main id="main" tabindex="-1">
     <section class="welcome" aria-labelledby="welcome-title">
-      <div class="hero-art" aria-hidden="true"></div>
-      <div class="welcome-copy"><h1 id="welcome-title">Всё важное<br><span>в одном месте.</span></h1><p>Сайты, материалы и инструменты.</p></div>
-      <div class="welcome-date"><time id="hero-time"></time><span id="top-date"></span></div>
+      <div class="hero-art" aria-hidden="true"><canvas></canvas></div>
+      <h1 id="welcome-title" class="sr-only">PweB — сайты, материалы и инструменты</h1>
+      <div class="hero-copy"><span class="greet" id="greet"></span><time class="clock" id="hero-time"></time><span class="date" id="top-date"></span></div>
     </section>
     <section class="library" aria-labelledby="library-title">
-      <div class="library-heading"><h2 id="library-title">Ресурсы <span id="resource-count" class="count"></span></h2><div class="library-actions"><div class="view-toggle" role="group" aria-label="Вид ресурсов"><button class="icon-button" id="view-grid" aria-label="Сетка" aria-pressed="true"><span data-icon="grid"></span></button><button class="icon-button" id="view-list" aria-label="Список" aria-pressed="false"><span data-icon="list"></span></button></div><button class="button primary" id="add-resource"><span data-icon="plus"></span>Добавить ресурс</button></div></div>
-      <nav id="navigation" aria-label="Разделы хаба"></nav>
+      <h2 id="library-title" class="sr-only">Ресурсы <span id="resource-count" class="count"></span></h2>
+      <div class="library-bar"><nav id="navigation" aria-label="Разделы хаба"></nav><div class="library-actions"><div class="view-toggle" role="group" aria-label="Вид ресурсов"><button class="icon-button" id="view-grid" aria-label="Сетка" aria-pressed="true"><span data-icon="grid"></span></button><button class="icon-button" id="view-list" aria-label="Список" aria-pressed="false"><span data-icon="list"></span></button></div><button class="button add-button" id="add-resource"><span data-icon="plus"></span>Добавить</button></div></div>
       <div id="search-scope" class="search-scope" role="group" aria-label="Где искать" hidden></div>
       <div id="resources"></div>
       <section id="site-results" class="site-results" aria-labelledby="site-results-title" aria-live="polite" hidden></section>
     </section>
     <section class="widget today-widget" id="tasks-widget" aria-labelledby="tasks-title" hidden><div class="widget-heading"><h2 id="tasks-title">На сегодня</h2><span id="todo-count"></span></div><div id="todos"></div><form id="todo-form"><input name="task" maxlength="180" aria-label="Новая задача" placeholder="Добавить задачу" required><button class="icon-button" aria-label="Добавить задачу"><span data-icon="plus"></span></button></form></section>
-    <footer><a href="https://github.com/BelovVlad/belovvlad.github.io" target="_blank" rel="noopener noreferrer"><span data-icon="github"></span>Код проекта</a><span id="save-status"><span class="status-dot"></span>Сохранение в браузере</span></footer>
+    <footer><a href="https://github.com/BelovVlad/belovvlad.github.io" target="_blank" rel="noopener noreferrer">Код проекта</a><span id="save-status"><span class="status-dot"></span>Сохранение в браузере</span></footer>
   </main>
   <dialog id="resource-dialog" aria-labelledby="resource-dialog-title">
     <form id="resource-form"><div class="dialog-head"><h2 id="resource-dialog-title">Новый ресурс</h2><button class="icon-button" type="button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div>
       <label>Название<input name="title" maxlength="100" required placeholder="Название сайта или проекта"></label>
       <label>Ссылка<input name="url" type="url" maxlength="2048" placeholder="https://…"><small>Оставьте пустой, если ресурс ещё не опубликован.</small></label>
       <label>Описание<textarea name="description" maxlength="300" rows="2" placeholder="Коротко о ресурсе"></textarea></label>
-      <div class="form-row"><label>Раздел<select name="category" required></select></label><label>Иконка<select name="icon"></select></label></div>
+      <div class="form-row"><label>Раздел<select name="category" required></select></label><label>Монограмма<input name="mono" maxlength="3" autocomplete="off" placeholder="Авто"></label></div>
       <label class="checkbox-label"><input type="checkbox" name="favorite">Закрепить наверху</label>
       <p class="form-error" id="resource-error" role="alert"></p><div class="dialog-actions"><button class="button" type="button" data-close>Отмена</button><button class="button primary" type="submit">Сохранить</button></div>
     </form>
@@ -47,14 +53,21 @@
   <dialog id="category-dialog" aria-labelledby="category-dialog-title"><form id="category-form"><div class="dialog-head"><h2 id="category-dialog-title">Новый раздел</h2><button class="icon-button" type="button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div><label>Название<input name="name" maxlength="60" required placeholder="Название раздела"></label><label>Описание<input name="description" maxlength="180" placeholder="Что будет в этом разделе"></label><label>Иконка<select name="icon"></select></label><p class="form-error" id="category-error" role="alert"></p><div class="dialog-actions"><button class="button" type="button" data-close>Отмена</button><button class="button primary" type="submit">Сохранить</button></div></form></dialog>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="dialog-head"><h2 id="settings-title">Настройки</h2><button class="icon-button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div>
-    <div class="settings-tabs" role="tablist" aria-label="Настройки хаба"><button id="tab-general" role="tab" aria-selected="true" aria-controls="panel-general" data-settings-tab="general">Основные</button><button id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1" data-settings-tab="categories">Разделы</button><button id="tab-backup" role="tab" aria-selected="false" aria-controls="panel-backup" tabindex="-1" data-settings-tab="backup">Резервная копия</button></div>
+    <div class="settings-tabs" role="tablist" aria-label="Настройки хаба"><button id="tab-general" role="tab" aria-selected="true" aria-controls="panel-general" data-settings-tab="general">Основные</button><button id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1" data-settings-tab="categories">Разделы</button><button id="tab-app" role="tab" aria-selected="false" aria-controls="panel-app" tabindex="-1" data-settings-tab="app">Приложение</button><button id="tab-backup" role="tab" aria-selected="false" aria-controls="panel-backup" tabindex="-1" data-settings-tab="backup">Резервная копия</button></div>
     <section id="panel-general" role="tabpanel" aria-labelledby="tab-general" tabindex="0">
       <div class="setting-row"><label for="theme-select"><strong>Тема</strong><span>Оформление хаба</span></label><select id="theme-select"><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="system">Системная</option></select></div>
-      <label class="setting-row switch-row" for="new-tab"><span><strong>Новая вкладка</strong><small>Открывать ресурсы в отдельной вкладке</small></span><input type="checkbox" id="new-tab" role="switch"></label>
+      <label class="setting-row switch-row" for="new-tab"><span><strong>Новая вкладка</strong><small>Открывать ресурсы в отдельной вкладке. В установленном приложении сайты PweB открываются в его окне</small></span><input type="checkbox" id="new-tab" role="switch"></label>
       <label class="setting-row switch-row" for="show-tasks"><span><strong>Список задач</strong><small>Показывать блок «На сегодня»</small></span><input type="checkbox" id="show-tasks" role="switch"></label>
       <p class="settings-note">Изменения сохраняются автоматически.</p>
     </section>
     <section id="panel-categories" role="tabpanel" aria-labelledby="tab-categories" tabindex="0" hidden><p class="settings-intro">Пустые разделы скрыты с главной. Они появятся, когда вы добавите ресурс.</p><div id="category-manager"></div><button class="button" id="settings-add-category"><span data-icon="plus"></span>Новый раздел</button></section>
+    <section id="panel-app" role="tabpanel" aria-labelledby="tab-app" tabindex="0" hidden>
+      <div class="install-card"><img src="./assets/app-192.png" alt="" width="48" height="48"><div><strong id="install-title">Приложение PweB</strong><span id="install-text">Хаб, НГУ, Кафедра и диплом в одном окне.</span></div><button class="button primary" id="install-app"><span data-icon="download"></span>Установить</button></div>
+      <p class="settings-intro" id="install-help" hidden></p>
+      <h3 class="settings-subtitle">Без интернета</h3>
+      <div id="offline-sites" class="offline-sites" aria-live="polite"></div>
+      <p class="settings-note" id="storage-note"></p>
+    </section>
     <section id="panel-backup" role="tabpanel" aria-labelledby="tab-backup" tabindex="0" hidden><div class="backup-illustration" aria-hidden="true"><span data-icon="folder"></span></div><h3>Ваша коллекция — с вами</h3><p class="settings-intro">Скачайте копию ссылок, задач и настроек в JSON, чтобы перенести её в другой браузер или на другое устройство.</p><div class="backup-actions"><button class="button" id="export-config"><span data-icon="download"></span>Скачать JSON</button><button class="button" id="import-config"><span data-icon="upload"></span>Импортировать</button></div><input type="file" id="import-file" accept=".json,application/json" hidden><p class="form-error" id="import-error" role="alert"></p></section>
   </dialog>
   <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-head"><h2 id="confirm-title"></h2></div><p id="confirm-message"></p><div class="dialog-actions"><button class="button" id="confirm-cancel">Отмена</button><button class="button primary" id="confirm-accept">Продолжить</button></div></dialog>

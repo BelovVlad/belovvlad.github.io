@@ -2,9 +2,9 @@
 // worker's scope covers it all, but it answers only for the hub's own files: requests of the
 // other sites (/NSU_FP_Y4_S1/, /Department/, /diploma/ — those with their own, more specific
 // workers or none) are left to the browser untouched.
-const CACHE = 'pweb-hub-v1';
-const SHELL = ['', 'index.html', 'styles.css', 'app.js', 'model.js', 'config.js', 'icons.js', 'site-search.js',
-  'assets/atom.svg', 'assets/favicon.svg', 'assets/particles-hero.webp', 'assets/fonts/roboto-condensed-cyrillic-wght-normal.woff2', 'assets/fonts/roboto-condensed-latin-wght-normal.woff2',
+const CACHE = 'pweb-hub-v3';
+const SHELL = ['', 'index.html', 'styles.css', 'app.js', 'model.js', 'config.js', 'icons.js', 'site-search.js', 'hero.js', 'install.js', 'manifest.webmanifest',
+  'assets/atom.svg', 'assets/favicon.svg', 'assets/app-192.png', 'assets/app-512.png', 'assets/app-maskable-512.png', 'assets/apple-touch-icon.png', 'assets/fonts/roboto-condensed-cyrillic-wght-normal.woff2', 'assets/fonts/roboto-condensed-latin-wght-normal.woff2',
   'assets/fonts/roboto-condensed-latin-ext-wght-normal.woff2'];
 const root = new URL('./', self.location);
 
