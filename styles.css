@@ -29,11 +29,17 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 [hidden]{display:none!important}
 .icon{display:block;flex:none;width:20px;height:20px}
 span[data-icon]{display:inline-flex;align-items:center;justify-content:center}
+/* Launch screen of the installed app: it continues the system splash (same background) with the logo's
+   dots breathing, then fades out. Only in standalone mode and once per session (inline script in index.html). */
+.launch{display:none}
+.launching .launch{position:fixed;inset:0;z-index:1000;display:grid;place-content:center;justify-items:center;gap:20px;background:#080d12;color:#f1ede7;font:600 24px/1 "Bahnschrift","Roboto Condensed","Segoe UI",system-ui,sans-serif;letter-spacing:-.01em;animation:launch-out .45s ease 1s forwards}
+.launch img{width:104px;height:104px}
+@keyframes launch-out{to{opacity:0;visibility:hidden}}
 .skip-link{position:fixed;top:-100px;left:20px;z-index:1000;background:var(--accent);color:white;padding:12px}
 .skip-link:focus{top:10px}
 .topbar{height:76px;display:flex;align-items:center;gap:20px;padding:0 max(28px,calc((100vw - 1200px)/2));border-bottom:1px solid var(--line2)}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none;margin-right:auto}
-.brand-mark{display:block;width:34px;height:34px}
+.brand-mark{display:block;width:auto;height:38px}
 :root[data-theme=light] .brand-mark{filter:brightness(.64) saturate(.8)}
 .brand strong{font:600 22px/1 "Bahnschrift","Roboto Condensed","Segoe UI",system-ui,sans-serif;color:var(--text);letter-spacing:-.01em}
 .searchbox{display:flex;align-items:center;gap:10px;width:min(520px,44vw);min-width:0;height:42px;border:1px solid var(--line);border-radius:11px;padding:0 14px;color:var(--muted);background:var(--panel)}
@@ -91,21 +97,13 @@ main{width:min(100%,1256px);margin:0 auto;padding:28px 28px 0;min-height:calc(10
 #resources{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .resource-card{position:relative;isolation:isolate;min-width:0;display:flex;flex-direction:column;gap:8px;padding:20px 20px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);transition:border-color .2s}
 .resource-card:hover,.resource-card:focus-within{border-color:var(--warm)}
-/* Dots are the shared motif: on hover the banner's dot grid (and a sparse red accent) surfaces in the card's
-   corner and a slow wave runs through it, like the one on the banner. Each card has its own wave (--dw-*, set from
-   its id in app.js). Touch screens keep a faint still patch. */
-.resource-card:before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
-  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 75%,transparent) 1.25px,transparent 1.75px) var(--dw-rx,22px) var(--dw-ry,22px)/var(--dw-tile,55px) var(--dw-tile,55px),radial-gradient(circle,color-mix(in srgb,var(--cream,#ead4b7) 34%,transparent) 1.1px,transparent 1.6px) 0 0/11px 11px;
-  -webkit-mask:radial-gradient(circle at 100% 0,#000,transparent var(--dw-reach,62%)),linear-gradient(var(--dw-angle,110deg),#0006 0,#000 26%,#0008 52%,#000e 76%,#0006 100%) 0 0/var(--dw-len,300%) 100%;
-  -webkit-mask-composite:source-in;
-  mask:radial-gradient(circle at 100% 0,#000,transparent var(--dw-reach,62%)),linear-gradient(var(--dw-angle,110deg),#0006 0,#000 26%,#0008 52%,#000e 76%,#0006 100%) 0 0/var(--dw-len,300%) 100%;
-  mask-composite:intersect}
-.resource-card:hover:before,.resource-card:focus-within:before{opacity:1;animation:card-dots var(--dw-time,6s) linear infinite var(--dw-dir,normal)}
-@keyframes card-dots{to{-webkit-mask-position:0 0,var(--dw-end,-150%) 0;mask-position:0 0,var(--dw-end,-150%) 0}}
-@media(hover:none){.resource-card:before{opacity:.45}.resource-card:active:before{opacity:1;animation:card-dots var(--dw-time,6s) linear infinite var(--dw-dir,normal)}}
+/* Living dot patches (dots.js draws them like the banner). Hidden until the card is hovered or pinned on;
+   touch screens show one still, fainter frame. */
+.dots-canvas{position:absolute;inset:0;z-index:-1;width:100%;height:100%;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s ease}
+.dots-hot>.dots-canvas,.dots-on>.dots-canvas{opacity:1}
+@media(hover:none){.dots-canvas{opacity:.55}}
 .resource-card.draft{border-style:dashed;background:transparent}
 .resource-card.draft:hover,.resource-card.draft:focus-within{border-color:var(--line)}
-.resource-card.draft:before{display:none}
 .card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .mono{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--cream);
   background:radial-gradient(circle,color-mix(in srgb,var(--cream) 16%,transparent) .9px,transparent 1.3px) 0 0/6px 6px,color-mix(in srgb,var(--warm) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--warm) 25%,transparent)}
@@ -278,7 +276,7 @@ dialog form>.checkbox-label{flex-direction:row;align-items:center;gap:9px;min-he
 }
 @media(max-width:650px){
   .topbar{height:auto;flex-wrap:wrap;gap:12px;padding:14px 18px}
-  .brand{gap:9px}.brand-mark{width:30px;height:30px}.brand strong{font-size:21px}
+  .brand{gap:9px}.brand-mark{height:32px}.brand strong{font-size:21px}
   .settings-trigger{order:1}
   .searchbox{order:2;flex-basis:100%;width:100%;height:40px;padding:0 12px}
   kbd{display:none}

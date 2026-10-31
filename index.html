@@ -7,20 +7,24 @@
   <meta name="theme-color" content="#080d12">
   <meta name="color-scheme" content="dark light">
   <title>Home · PweB</title>
-  <link rel="icon" href="./assets/favicon.svg?v=4" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=3"><link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png?v=3">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png?v=3">
   <meta name="apple-mobile-web-app-title" content="PweB">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="./styles.css">
+  <!-- The installed app opens on its launch screen: the logo with breathing dots, once per session. -->
+  <script>try{if(matchMedia('(display-mode: standalone)').matches&&!sessionStorage.getItem('pweb.launched')){document.documentElement.classList.add('launching');sessionStorage.setItem('pweb.launched','1')}}catch{}</script>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./hero.js"></script>
+  <script defer src="./dots.js"></script>
   <script type="module" src="./install.js"></script>
 </head>
 <body>
+  <div class="launch" aria-hidden="true"><img src="./assets/logo-launch.svg?v=3" alt="" width="104" height="104"><span>PweB</span></div>
   <a class="skip-link" href="#main">К содержимому</a>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="PweB — главная"><img class="brand-mark" src="./assets/atom.svg?v=4" alt="" width="38" height="38"><strong>PweB</strong></a>
+    <a class="brand" href="./" aria-label="PweB — главная"><img class="brand-mark" src="./assets/logo.svg?v=3" alt="" width="38" height="38"><strong>PweB</strong></a>
     <label class="searchbox"><span data-icon="search"></span><input id="search" type="search" placeholder="Поиск по ресурсам и конспектам" aria-label="Поиск по хабу" autocomplete="off"><kbd>Ctrl K</kbd></label>
     <button class="icon-button settings-trigger" id="settings-button" aria-label="Настройки" title="Настройки"><span data-icon="settings"></span></button>
   </header>
