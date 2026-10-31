@@ -92,16 +92,17 @@ main{width:min(100%,1256px);margin:0 auto;padding:28px 28px 0;min-height:calc(10
 .resource-card{position:relative;isolation:isolate;min-width:0;display:flex;flex-direction:column;gap:8px;padding:20px 20px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);transition:border-color .2s}
 .resource-card:hover,.resource-card:focus-within{border-color:var(--warm)}
 /* Dots are the shared motif: on hover the banner's dot grid (and a sparse red accent) surfaces in the card's
-   corner and a slow wave runs through it, like the one on the banner. Touch screens keep a faint still patch. */
+   corner and a slow wave runs through it, like the one on the banner. Each card has its own wave (--dw-*, set from
+   its id in app.js). Touch screens keep a faint still patch. */
 .resource-card:before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
-  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 75%,transparent) 1.25px,transparent 1.75px) 22px 22px/55px 55px,radial-gradient(circle,color-mix(in srgb,var(--cream) 34%,transparent) 1.1px,transparent 1.6px) 0 0/11px 11px;
-  -webkit-mask:radial-gradient(circle at 100% 0,#000,transparent 62%),linear-gradient(110deg,#0006 0,#000 26%,#0008 52%,#000e 76%,#0006 100%) 0 0/300% 100%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 75%,transparent) 1.25px,transparent 1.75px) var(--dw-rx,22px) var(--dw-ry,22px)/var(--dw-tile,55px) var(--dw-tile,55px),radial-gradient(circle,color-mix(in srgb,var(--cream,#ead4b7) 34%,transparent) 1.1px,transparent 1.6px) 0 0/11px 11px;
+  -webkit-mask:radial-gradient(circle at 100% 0,#000,transparent var(--dw-reach,62%)),linear-gradient(var(--dw-angle,110deg),#0006 0,#000 26%,#0008 52%,#000e 76%,#0006 100%) 0 0/var(--dw-len,300%) 100%;
   -webkit-mask-composite:source-in;
-  mask:radial-gradient(circle at 100% 0,#000,transparent 62%),linear-gradient(110deg,#0006 0,#000 26%,#0008 52%,#000e 76%,#0006 100%) 0 0/300% 100%;
+  mask:radial-gradient(circle at 100% 0,#000,transparent var(--dw-reach,62%)),linear-gradient(var(--dw-angle,110deg),#0006 0,#000 26%,#0008 52%,#000e 76%,#0006 100%) 0 0/var(--dw-len,300%) 100%;
   mask-composite:intersect}
-.resource-card:hover:before,.resource-card:focus-within:before{opacity:1;animation:card-dots 6s linear infinite}
-@keyframes card-dots{to{-webkit-mask-position:0 0,-150% 0;mask-position:0 0,-150% 0}}
-@media(hover:none){.resource-card:before{opacity:.45}.resource-card:active:before{opacity:1;animation:card-dots 6s linear infinite}}
+.resource-card:hover:before,.resource-card:focus-within:before{opacity:1;animation:card-dots var(--dw-time,6s) linear infinite var(--dw-dir,normal)}
+@keyframes card-dots{to{-webkit-mask-position:0 0,var(--dw-end,-150%) 0;mask-position:0 0,var(--dw-end,-150%) 0}}
+@media(hover:none){.resource-card:before{opacity:.45}.resource-card:active:before{opacity:1;animation:card-dots var(--dw-time,6s) linear infinite var(--dw-dir,normal)}}
 .resource-card.draft{border-style:dashed;background:transparent}
 .resource-card.draft:hover,.resource-card.draft:focus-within{border-color:var(--line)}
 .resource-card.draft:before{display:none}

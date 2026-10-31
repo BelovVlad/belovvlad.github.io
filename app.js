@@ -63,6 +63,20 @@ function autoMonogram(title) {
   return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toLocaleUpperCase('ru');
 }
 const monogram = r => r.mono || SEED_MONOGRAMS[r.id] || autoMonogram(r.title);
+// Each card has its own wave in its corner dots, picked from its id, so it stays the same across tabs and visits:
+// direction, length (with the shift that loops it seamlessly), speed, red spacing on the 11px grid, reach.
+const WAVES = {
+  angle:[65, 90, 110, 135, 160], time:[4.8, 5.6, 6.4, 7.2, 8.2],
+  length:[['200%', '-200%'], ['300%', '-150%'], ['400%', '-133.333%']],
+  red:[[44, 16.5, 5.5], [55, 22, 0], [66, 5.5, 27.5], [77, 33, 11], [55, 0, 33]], reach:[55, 62, 70]
+};
+function waveStyle(id) {
+  let h = 2166136261;
+  for (const ch of id) h = Math.imul(h ^ ch.codePointAt(0), 16777619) >>> 0;
+  const pick = list => { const value = list[h % list.length]; h = (Math.floor(h / list.length) ^ Math.imul(h, 2654435761)) >>> 0; return value; };
+  const [len, end] = pick(WAVES.length), [tile, rx, ry] = pick(WAVES.red);
+  return `--dw-angle:${pick(WAVES.angle)}deg;--dw-time:${pick(WAVES.time)}s;--dw-len:${len};--dw-end:${end};--dw-tile:${tile}px;--dw-rx:${rx}px;--dw-ry:${ry}px;--dw-reach:${pick(WAVES.reach)}%;--dw-dir:${h & 1 ? 'reverse' : 'normal'}`;
+}
 // The address under the card: host and path, without the scheme and the closing slash.
 function cardPath(url) {
   const u = new URL(url), path = decodeURIComponent(u.pathname).replace(/\/$/, '');
@@ -75,7 +89,7 @@ function renderNavigation() {
 function resourceCard(r) {
   const peers = config.resources.filter(item => item.category === r.category), index = peers.findIndex(item => item.id === r.id);
   const title = r.url ? `<a class="card-link" href="${escape(r.url)}" ${targetAttrs(r.url)}>${escape(r.title)}</a>` : `<button class="card-link draft-title" data-action="edit" data-id="${escape(r.id)}">${escape(r.title)}</button>`;
-  return `<article class="resource-card${r.url ? '' : ' draft'}" data-id="${escape(r.id)}"><div class="card-top"><span class="mono" aria-hidden="true">${escape(monogram(r))}</span><div class="card-actions"><button class="icon-button pin ${r.favorite ? 'active' : ''}" data-action="pin" aria-label="${r.favorite ? 'Убрать из избранного' : 'В избранное'}: ${escape(r.title)}" aria-pressed="${r.favorite}">${icon('star')}</button><button class="icon-button menu-trigger" data-action="menu" aria-label="Действия: ${escape(r.title)}" aria-expanded="false">${icon('more')}</button><div class="card-menu" hidden><button data-action="edit">Редактировать</button><button data-action="up" ${index === 0 ? 'disabled' : ''}>Переместить выше</button><button data-action="down" ${index === peers.length-1 ? 'disabled' : ''}>Переместить ниже</button><button class="danger" data-action="delete">Удалить ресурс</button></div></div></div><h3 class="card-title">${title}</h3><p class="card-description">${escape(r.description)}</p><div class="card-bottom">${r.url ? `<span class="card-path">${escape(cardPath(r.url))}</span><span class="open-arrow">${icon('arrow')}</span>` : '<span class="card-path">адрес не задан</span>'}</div></article>`;
+  return `<article class="resource-card${r.url ? '' : ' draft'}" data-id="${escape(r.id)}" style="${waveStyle(r.id)}"><div class="card-top"><span class="mono" aria-hidden="true">${escape(monogram(r))}</span><div class="card-actions"><button class="icon-button pin ${r.favorite ? 'active' : ''}" data-action="pin" aria-label="${r.favorite ? 'Убрать из избранного' : 'В избранное'}: ${escape(r.title)}" aria-pressed="${r.favorite}">${icon('star')}</button><button class="icon-button menu-trigger" data-action="menu" aria-label="Действия: ${escape(r.title)}" aria-expanded="false">${icon('more')}</button><div class="card-menu" hidden><button data-action="edit">Редактировать</button><button data-action="up" ${index === 0 ? 'disabled' : ''}>Переместить выше</button><button data-action="down" ${index === peers.length-1 ? 'disabled' : ''}>Переместить ниже</button><button class="danger" data-action="delete">Удалить ресурс</button></div></div></div><h3 class="card-title">${title}</h3><p class="card-description">${escape(r.description)}</p><div class="card-bottom">${r.url ? `<span class="card-path">${escape(cardPath(r.url))}</span><span class="open-arrow">${icon('arrow')}</span>` : '<span class="card-path">адрес не задан</span>'}</div></article>`;
 }
 const siteSources = SITE_SEARCH.map(materialsSource);
 // While searching, the scope chooses what is shown: 'all', 'resources' or one site's id.
