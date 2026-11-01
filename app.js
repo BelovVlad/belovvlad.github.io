@@ -244,6 +244,20 @@ document.addEventListener('keydown', event => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]')) { event.preventDefault(); $('#search').focus(); $('#search').select(); }
   if (event.key === 'Escape') closeMenus();
 });
+document.querySelectorAll('[data-open-hyle]').forEach(button => button.onclick = () => $('#hyle-dialog').showModal());
+// Holding the brand for half a second opens the same note; the click that ends the hold is not a navigation.
+{
+  const brand = $('.brand'); let timer = 0, held = false;
+  const release = () => { clearTimeout(timer); brand.classList.remove('holding'); };
+  brand.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    held = false; brand.classList.add('holding');
+    timer = setTimeout(() => { held = true; release(); $('#hyle-dialog').showModal(); }, 500);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => brand.addEventListener(type, release));
+  brand.addEventListener('click', event => { if (held) { event.preventDefault(); held = false; } });
+  brand.addEventListener('contextmenu', event => { if (held || brand.classList.contains('holding')) event.preventDefault(); });
+}
 document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
 document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } }));
 $('#confirm-cancel').onclick = () => $('#confirm-dialog').close();
@@ -290,7 +304,7 @@ $('#category-manager').onclick = event => {
   confirmAction('Удалить раздел?', `Пустой раздел «${c.name}» будет удалён.`, () => { config.categories = config.categories.filter(c => c.id !== id); if (selected === id) selected = 'all'; save('Раздел удалён'); });
 };
 $('#export-config').onclick = () => {
-  const blob = new Blob([JSON.stringify(config,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = `pweb-home-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
+  const blob = new Blob([JSON.stringify(config,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = `hyle-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
 };
 $('#import-config').onclick = () => $('#import-file').click();
 $('#import-file').onchange = async event => {
@@ -299,7 +313,7 @@ $('#import-file').onchange = async event => {
     if (file.size > 2 * 1024 * 1024) throw new Error('Файл должен быть не больше 2 МБ.');
     pendingImport = migrateConfig(validateConfig(JSON.parse(await file.text()))); $('#import-error').textContent = '';
     confirmAction('Импортировать коллекцию?', `В файле ${pendingImport.resources.length} ресурсов и ${pendingImport.categories.length} разделов. Они заменят текущую коллекцию. Перед заменой можно отменить действие и скачать экспорт.`, () => { config = pendingImport; pendingImport = null; storageBlocked = false; selected = 'all'; query = ''; $('#search').value = ''; save('Коллекция импортирована'); }, 'Импортировать');
-  } catch (error) { $('#import-error').textContent = error instanceof SyntaxError ? 'Не удалось прочитать JSON. Выберите файл экспорта PweB.' : error.message; }
+  } catch (error) { $('#import-error').textContent = error instanceof SyntaxError ? 'Не удалось прочитать JSON. Выберите файл экспорта хаба.' : error.message; }
 };
 window.addEventListener('storage', event => { if (event.key === STORAGE_KEY && event.newValue) { try { config = migrateConfig(validateConfig(JSON.parse(event.newValue))); if (!config.categories.some(c => c.id === selected) && !['all','favorites'].includes(selected)) selected = 'all'; render(); notify('Коллекция обновлена в другой вкладке'); } catch { notify('Изменения из другой вкладки не удалось прочитать.'); } } });
 $('#todo-form').onsubmit = event => { event.preventDefault(); const input = event.target.elements.task, text = input.value.trim(); if (!text) return; config.todos.push({id:crypto.randomUUID(),text,done:false}); input.value = ''; save(); };

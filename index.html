@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="PweB — сайты, учебные материалы и инструменты в одном месте.">
+  <meta name="description" content="Hyle (ὕλη, «материя») — сайты, учебные материалы и инструменты в одном месте.">
   <meta name="theme-color" content="#080d12">
   <meta name="color-scheme" content="dark light">
-  <title>Home · PweB</title>
+  <title>Hyle</title>
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=3"><link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png?v=3">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png?v=4">
-  <meta name="apple-mobile-web-app-title" content="PweB">
+  <meta name="apple-mobile-web-app-title" content="Hyle">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="./styles.css">
   <!-- The installed app opens on its launch screen: the logo with breathing dots, once per session. -->
@@ -21,17 +21,17 @@
   <script type="module" src="./install.js"></script>
 </head>
 <body>
-  <div class="launch" aria-hidden="true"><img src="./assets/logo-launch.svg?v=3" alt="" width="104" height="104"><span>PweB</span></div>
+  <div class="launch" aria-hidden="true"><img src="./assets/logo-launch.svg?v=3" alt="" width="104" height="104"><span>Hyle</span></div>
   <a class="skip-link" href="#main">К содержимому</a>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="PweB — главная"><img class="brand-mark" src="./assets/logo.svg?v=3" alt="" width="38" height="38"><strong>PweB</strong></a>
+    <a class="brand" href="./" aria-label="Hyle — главная"><img class="brand-mark" src="./assets/logo.svg?v=3" alt="" width="38" height="38"><strong>Hyle</strong></a>
     <label class="searchbox"><span data-icon="search"></span><input id="search" type="search" placeholder="Поиск по ресурсам и конспектам" aria-label="Поиск по хабу" autocomplete="off"><kbd>Ctrl K</kbd></label>
     <button class="icon-button settings-trigger" id="settings-button" aria-label="Настройки" title="Настройки"><span data-icon="settings"></span></button>
   </header>
   <main id="main" tabindex="-1">
     <section class="welcome" aria-labelledby="welcome-title">
       <div class="hero-art" aria-hidden="true"><canvas></canvas></div>
-      <h1 id="welcome-title" class="sr-only">PweB — сайты, материалы и инструменты</h1>
+      <h1 id="welcome-title" class="sr-only">Hyle — сайты, материалы и инструменты</h1>
       <div class="hero-copy"><span class="greet" id="greet"></span><time class="clock" id="hero-time"></time><span class="date" id="top-date"></span></div>
     </section>
     <section class="library" aria-labelledby="library-title">
@@ -42,7 +42,7 @@
       <section id="site-results" class="site-results" aria-labelledby="site-results-title" aria-live="polite" hidden></section>
     </section>
     <section class="widget today-widget" id="tasks-widget" aria-labelledby="tasks-title" hidden><div class="widget-heading"><h2 id="tasks-title">На сегодня</h2><span id="todo-count"></span></div><div id="todos"></div><form id="todo-form"><input name="task" maxlength="180" aria-label="Новая задача" placeholder="Добавить задачу" required><button class="icon-button" aria-label="Добавить задачу"><span data-icon="plus"></span></button></form></section>
-    <footer><a href="https://github.com/BelovVlad/belovvlad.github.io" target="_blank" rel="noopener noreferrer">Код проекта</a><span id="save-status"><span class="status-dot"></span>Сохранение в браузере</span></footer>
+    <footer><span class="footer-links"><a href="https://github.com/BelovVlad/belovvlad.github.io" target="_blank" rel="noopener noreferrer">Код проекта</a><button type="button" data-open-hyle aria-haspopup="dialog">Почему Hyle</button></span><span id="save-status"><span class="status-dot"></span>Сохранение в браузере</span></footer>
   </main>
   <dialog id="resource-dialog" aria-labelledby="resource-dialog-title">
     <form id="resource-form"><div class="dialog-head"><h2 id="resource-dialog-title">Новый ресурс</h2><button class="icon-button" type="button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div>
@@ -60,13 +60,13 @@
     <div class="settings-tabs" role="tablist" aria-label="Настройки хаба"><button id="tab-general" role="tab" aria-selected="true" aria-controls="panel-general" data-settings-tab="general">Основные</button><button id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" tabindex="-1" data-settings-tab="categories">Разделы</button><button id="tab-app" role="tab" aria-selected="false" aria-controls="panel-app" tabindex="-1" data-settings-tab="app">Приложение</button><button id="tab-backup" role="tab" aria-selected="false" aria-controls="panel-backup" tabindex="-1" data-settings-tab="backup">Резервная копия</button></div>
     <section id="panel-general" role="tabpanel" aria-labelledby="tab-general" tabindex="0">
       <div class="setting-row"><label for="theme-select"><strong>Тема</strong><span>Оформление хаба</span></label><select id="theme-select"><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="system">Системная</option></select></div>
-      <label class="setting-row switch-row" for="new-tab"><span><strong>Новая вкладка</strong><small>Открывать ресурсы в отдельной вкладке. В установленном приложении сайты PweB открываются в его окне</small></span><input type="checkbox" id="new-tab" role="switch"></label>
+      <label class="setting-row switch-row" for="new-tab"><span><strong>Новая вкладка</strong><small>Открывать ресурсы в отдельной вкладке. В установленном приложении сайты Hyle открываются в его окне</small></span><input type="checkbox" id="new-tab" role="switch"></label>
       <label class="setting-row switch-row" for="show-tasks"><span><strong>Список задач</strong><small>Показывать блок «На сегодня»</small></span><input type="checkbox" id="show-tasks" role="switch"></label>
       <p class="settings-note">Изменения сохраняются автоматически.</p>
     </section>
     <section id="panel-categories" role="tabpanel" aria-labelledby="tab-categories" tabindex="0" hidden><p class="settings-intro">Пустые разделы скрыты с главной. Они появятся, когда вы добавите ресурс.</p><div id="category-manager"></div><button class="button" id="settings-add-category"><span data-icon="plus"></span>Новый раздел</button></section>
     <section id="panel-app" role="tabpanel" aria-labelledby="tab-app" tabindex="0" hidden>
-      <div class="install-card"><img src="./assets/app-192.png?v=4" alt="" width="48" height="48"><div><strong id="install-title">Приложение PweB</strong><span id="install-text">Хаб, НГУ, Кафедра и диплом в одном окне.</span></div><button class="button primary" id="install-app"><span data-icon="download"></span>Установить</button></div>
+      <div class="install-card"><img src="./assets/app-192.png?v=4" alt="" width="48" height="48"><div><strong id="install-title">Приложение Hyle</strong><span id="install-text">Хаб, НГУ, Кафедра и диплом в одном окне.</span></div><button class="button primary" id="install-app"><span data-icon="download"></span>Установить</button></div>
       <p class="settings-intro" id="install-help" hidden></p>
       <h3 class="settings-subtitle">Без интернета</h3>
       <div id="offline-sites" class="offline-sites" aria-live="polite"></div>
@@ -74,8 +74,21 @@
     </section>
     <section id="panel-backup" role="tabpanel" aria-labelledby="tab-backup" tabindex="0" hidden><div class="backup-illustration" aria-hidden="true"><span data-icon="folder"></span></div><h3>Ваша коллекция — с вами</h3><p class="settings-intro">Скачайте копию ссылок, задач и настроек в JSON, чтобы перенести её в другой браузер или на другое устройство.</p><div class="backup-actions"><button class="button" id="export-config"><span data-icon="download"></span>Скачать JSON</button><button class="button" id="import-config"><span data-icon="upload"></span>Импортировать</button></div><input type="file" id="import-file" accept=".json,application/json" hidden><p class="form-error" id="import-error" role="alert"></p></section>
   </dialog>
+  <!-- Why the hub is called Hyle: Aristotle's ὕλη, opened by holding the brand or from the footer. -->
+  <dialog id="hyle-dialog" class="hyle-dialog" aria-labelledby="hyle-title">
+    <div class="dialog-head"><h2 id="hyle-title"><span lang="grc">Ὕλη</span> · материя</h2><button class="icon-button" data-close aria-label="Закрыть"><span data-icon="close"></span></button></div>
+    <p class="hyle-lead">Hyle (греч. <span lang="grc">ὕλη</span>) — «материя». Название взято у Аристотеля.</p>
+    <h3>Из леса — в философию</h3>
+    <p>В обычном греческом <span lang="grc">ὕλη</span> — «лес», «древесина», строевой материал плотника. Аристотель первым сделал это слово философским понятием: материя — это «то, из чего» (<span lang="grc">τὸ ἐξ οὗ</span>) возникает вещь. Медь — материя статуи, серебро — чаши, дерево — ложа (<cite>Физика</cite>&nbsp;II,&nbsp;3).</p>
+    <h3>Материя и форма</h3>
+    <p>Всякая вещь у Аристотеля — единство материи и формы (<span lang="grc">μορφή</span>, <span lang="grc">εἶδος</span>); позже это назовут гиломорфизмом. Материя — это возможность (<span lang="grc">δύναμις</span>): медь может стать статуей, а может — котлом, и действительной вещью её делает форма. Материи без всякой формы в мире не встретить: мысленно сняв с вещи все свойства, мы приходим к тому, что само по себе не есть ни сущность, ни количество, ни качество (<cite>Метафизика</cite>&nbsp;VII,&nbsp;3).</p>
+    <h3>Материя и пространство</h3>
+    <p>Платон в «Тимее» говорил о хоре (<span lang="grc">χώρα</span>) — «вместилище», в котором возникают вещи. Аристотель замечает, что Платон тем самым отождествил материю и пространство (<cite>Физика</cite>&nbsp;IV,&nbsp;2), — и разводит их. Место (<span lang="grc">τόπος</span>) — это граница объемлющего тела, неподвижная оболочка вокруг вещи. Материя же — то, из чего вещь состоит, и она уходит вместе с вещью, когда та перемещается. По-латыни <span lang="grc">ὕλη</span> передали словом <i lang="la">materia</i>, которое тоже значило «древесина», — отсюда наша «материя».</p>
+    <h3>Почему Hyle</h3>
+    <p>Здесь собран материал: конспекты, книги, расчёты, черновики диплома. Сам по себе он ещё не знание — форму ему даёт работа. Точки на баннере о том же: однородная россыпь, которой бегущая волна на миг придаёт очертания, а подсолнух из точек в логотипе — материя, уже принявшая форму.</p>
+  </dialog>
   <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-head"><h2 id="confirm-title"></h2></div><p id="confirm-message"></p><div class="dialog-actions"><button class="button" id="confirm-cancel">Отмена</button><button class="button primary" id="confirm-accept">Продолжить</button></div></dialog>
   <div class="toast" id="toast" role="status" hidden></div>
-  <noscript><p class="noscript">Для работы хаба включите JavaScript. <a href="https://belovvlad.github.io/NSU_FP_Y4_S1/">Открыть материалы НГУ</a></p></noscript>
+  <noscript><p class="noscript">Для работы хаба включите JavaScript. <a href="/NSU_FP_Y4_S1/">Открыть материалы НГУ</a></p></noscript>
 </body>
 </html>

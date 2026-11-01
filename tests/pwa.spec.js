@@ -30,7 +30,7 @@ for (const mode of ['fullscreen', 'standalone']) {
     await expect(page.locator('.resource-card[data-id="nsu-s1"] .card-title a')).not.toHaveAttribute('target');
     await page.locator('#settings-button').click();
     await page.getByRole('tab', { name: 'Приложение', exact: true }).click();
-    await expect(page.locator('#install-title')).toHaveText('Вы в приложении PweB');
+    await expect(page.locator('#install-title')).toHaveText('Вы в приложении Hyle');
     await expect(page.locator('#install-app')).toBeHidden();
     await page.reload();
     await expect(page.locator('html')).not.toHaveClass(/launching/);

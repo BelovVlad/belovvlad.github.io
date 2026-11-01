@@ -240,3 +240,12 @@ test.describe('offline', () => {
     await context.setOffline(false);
   });
 });
+
+test('holding the brand opens the note about Aristotle without navigating; a click still goes home',async({page})=>{
+  await page.goto('/');
+  const brand=page.locator('.brand'),box=await brand.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(700);await page.mouse.up();
+  await expect(page.locator('#hyle-dialog')).toBeVisible();await expect(page.locator('#hyle-dialog')).toContainText('Аристотель');
+  await page.locator('#hyle-dialog [data-close]').click();await expect(page.locator('#hyle-dialog')).toBeHidden();
+  await page.getByRole('button',{name:'Почему Hyle'}).click();await expect(page.locator('#hyle-dialog')).toBeVisible();
+});

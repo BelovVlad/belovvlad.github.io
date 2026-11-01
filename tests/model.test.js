@@ -132,6 +132,17 @@ test('revision 8 sections get Russian names unless the user renamed them or took
   assert.equal(next.resources.find(r=>r.id==='nsu-s2').description,'Заготовка: адрес появится, когда начнётся семестр.');
 });
 
+test('revision 9 cards move from the github.io address to the domain and keep other links',()=>{
+  const old=clone(defaults);old.revision=9;
+  for(const r of old.resources)r.url=r.url.replace('https://hyle.space/','https://belovvlad.github.io/');
+  old.resources.push({id:'mine',title:'Мой конспект',description:'',url:'https://belovvlad.github.io/NSU_FP_Y4_S1/docs/#search=спин',category:'education',icon:'book',favorite:false});
+  const next=migrateConfig(validateConfig(old));
+  assert.equal(next.revision,CURRENT_REVISION);
+  assert.equal(next.resources.find(r=>r.id==='mine').url,'https://hyle.space/NSU_FP_Y4_S1/docs/#search=спин');
+  assert.equal(next.resources.find(r=>r.id==='github').url,'https://github.com/BelovVlad');
+  assert.deepEqual(next.resources.map(r=>r.url).filter(url=>url.includes('github.io')),[]);
+});
+
 test('a monogram of up to three characters survives validation',()=>{
   const value=clone(defaults);value.resources[0].mono=' НГУФ ';
   assert.equal(validateConfig(value).resources[0].mono,'НГУ');

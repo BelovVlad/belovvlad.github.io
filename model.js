@@ -1,10 +1,10 @@
-import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL } from './config.js';
+import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
 
 export function validateConfig(value) {
-  if (!value || value.version !== 1 || !Array.isArray(value.categories) || !Array.isArray(value.resources)) throw new Error('Неподдерживаемый формат конфигурации. Нужен экспорт PweB версии 1.');
+  if (!value || value.version !== 1 || !Array.isArray(value.categories) || !Array.isArray(value.resources)) throw new Error('Неподдерживаемый формат конфигурации. Нужен экспорт хаба версии 1.');
   if (value.categories.length > 100 || value.resources.length > 2000) throw new Error('В файле слишком много разделов или ссылок.');
   const text = (v, max, required = false) => typeof v === 'string' && v.length <= max && (!required || v.trim().length > 0);
   const categoryIds = new Set();
@@ -53,7 +53,7 @@ export function migrateConfig(config) {
   }
   if (config.revision < 6) resources = resources.map(r => r.url.startsWith(DIPLOMA_PUBLIC_COPY) ? {...r,url:DIPLOMA_URL} : r);
   if (config.revision < 7) resources = resources.map(r => r.url.startsWith(DIPLOMA_CLOUDFLARE) ? {...r,url:DIPLOMA_URL} : r);
-  if (config.revision < 8 && !resources.some(r => r.id === DEPARTMENT_RESOURCE.id || r.url === DEPARTMENT_RESOURCE.url)) {
+  if (config.revision < 8 && !resources.some(r => r.id === DEPARTMENT_RESOURCE.id || [DEPARTMENT_RESOURCE.url, DEPARTMENT_RESOURCE.url.replace(ORIGIN, FORMER_ORIGIN)].includes(r.url))) {
     // Next to the NSU card's section if it was moved; Education by default, the first section otherwise.
     const home = [resources.find(r => r.id === 'nsu-s1')?.category, DEPARTMENT_RESOURCE.category].find(id => categories.some(c => c.id === id)) ?? categories[0]?.id;
     if (home) resources.push({...DEPARTMENT_RESOURCE,category:home});
@@ -64,6 +64,7 @@ export function migrateConfig(config) {
     categories = categories.map(c => { const rename = CATEGORY_RENAMES[c.id]; return rename && c.name === rename[0] && !taken(rename[1]) ? {...c,name:rename[1]} : c; });
     resources = resources.map(r => r.id === DRAFT_TEXT.id && !r.url && r.description === DRAFT_TEXT.old ? {...r,description:DRAFT_TEXT.text} : r);
   }
+  if (config.revision < 10) resources = resources.map(r => r.url.startsWith(FORMER_ORIGIN) ? {...r,url:ORIGIN + r.url.slice(FORMER_ORIGIN.length)} : r);
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }
 

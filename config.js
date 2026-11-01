@@ -1,6 +1,10 @@
-export const CURRENT_REVISION = 9;
+export const CURRENT_REVISION = 10;
+// The domain of every site (GitHub Pages of belovvlad.github.io with a custom domain).
+export const ORIGIN = 'https://hyle.space/';
+// Revision 10: cards saved with the former github.io address move to the domain.
+export const FORMER_ORIGIN = 'https://belovvlad.github.io/';
 // The Diploma site is its own repository: only encrypted files, opened with a password on every entry.
-export const DIPLOMA_URL = 'https://belovvlad.github.io/diploma/';
+export const DIPLOMA_URL = ORIGIN + 'diploma/';
 export const DIPLOMA_CATEGORY = { id:'diploma', name:'Диплом', description:'Литература, отчёт и разработка дипломной работы', icon:'folder' };
 export const DIPLOMA_RESOURCES = [
   { id:'diploma-materials', title:'Материалы диплома', description:'Литература, отчёт и разработка. Презентация открывается со страницы диплома.', url:DIPLOMA_URL, category:'diploma', icon:'book', favorite:false }
@@ -19,7 +23,7 @@ export const DIPLOMA_PUBLIC_COPY = 'https://belovvlad.github.io/diploma/';
 // Revision 7: the Cloudflare site (blocked in Russia) gives way to the encrypted one above.
 export const DIPLOMA_CLOUDFLARE = 'https://pweb-diploma.pages.dev/';
 // Revision 8: the Department site (course literature, own repository) joins Education.
-export const DEPARTMENT_RESOURCE = { id:'department', title:'Кафедра', description:'Литература курсов кафедры: циклические ускорители, электронная оптика и физика пучков.', url:'https://belovvlad.github.io/Department/', category:'education', icon:'book', favorite:true };
+export const DEPARTMENT_RESOURCE = { id:'department', title:'Кафедра', description:'Литература курсов кафедры: циклические ускорители, электронная оптика и физика пучков.', url:ORIGIN + 'Department/', category:'education', icon:'book', favorite:true };
 // Revision 9: the seed sections get Russian names (only where the user kept the original name),
 // and the draft of the second semester says why it has no address yet.
 export const CATEGORY_RENAMES = { education:['Education','Учёба'], projects:['Projects','Проекты'], tools:['Tools','Инструменты'], links:['Links','Ссылки'], personal:['Personal','Личное'] };
@@ -49,7 +53,7 @@ export default {
     { id: 'personal', name: 'Личное', description: 'Ваше личное пространство', icon: 'user' }
   ],
   resources: [
-    { id: 'nsu-s1', title: 'НГУ · 4 курс, 1 семестр', description: 'Конспекты, семинары и учебные материалы физического факультета.', url: 'https://belovvlad.github.io/NSU_FP_Y4_S1/', category: 'education', icon: 'book', favorite: true },
+    { id: 'nsu-s1', title: 'НГУ · 4 курс, 1 семестр', description: 'Конспекты, семинары и учебные материалы физического факультета.', url: ORIGIN + 'NSU_FP_Y4_S1/', category: 'education', icon: 'book', favorite: true },
     { id: 'nsu-s2', title: 'НГУ · 4 курс, 2 семестр', description: 'Заготовка: адрес появится, когда начнётся семестр.', url: '', category: 'education', icon: 'book', favorite: false },
     DEPARTMENT_RESOURCE,
     ...DIPLOMA_RESOURCES,

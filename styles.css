@@ -39,7 +39,10 @@ span[data-icon]{display:inline-flex;align-items:center;justify-content:center}
 .skip-link:focus{top:10px}
 .topbar{height:76px;display:flex;align-items:center;gap:20px;padding:0 max(28px,calc((100vw - 1200px)/2));border-bottom:1px solid var(--line2)}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none;margin-right:auto}
-.brand-mark{display:block;width:auto;height:38px}
+/* Holding the brand opens the note about the name (#hyle-dialog): the logo swells while it is held. */
+.brand{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.brand-mark{display:block;width:auto;height:38px;transition:transform .15s}
+.brand.holding .brand-mark{transform:scale(1.18);transition:transform .5s ease-out}
 :root[data-theme=light] .brand-mark{filter:brightness(.64) saturate(.8)}
 .brand strong{font:600 22px/1 "Bahnschrift","Roboto Condensed","Segoe UI",system-ui,sans-serif;color:var(--text);letter-spacing:-.01em}
 .searchbox{display:flex;align-items:center;gap:10px;width:min(520px,44vw);min-width:0;height:42px;border:1px solid var(--line);border-radius:11px;padding:0 14px;color:var(--muted);background:var(--panel)}
@@ -202,6 +205,9 @@ main{width:min(100%,1256px);margin:0 auto;padding:28px 28px 0;min-height:calc(10
 .today-widget form .icon-button{width:28px;height:28px}
 footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto;padding:40px 0 22px;color:var(--muted);font-size:12px}
 footer>a,footer>span{display:flex;align-items:center;gap:7px}
+.footer-links{gap:18px!important}
+.footer-links button{padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer}
+.footer-links button:hover{color:var(--cream)}
 footer a{text-decoration:none}
 footer a:hover{color:var(--cream)}
 footer .icon{width:13px;height:13px}
@@ -271,6 +277,12 @@ dialog form>.checkbox-label{flex-direction:row;align-items:center;gap:9px;min-he
 .offline-row[data-state=partial] .offline-dot{background:var(--warm)}
 .offline-row[data-state=pending] .offline-dot{background:transparent;box-shadow:inset 0 0 0 1.5px var(--warm)}
 #confirm-dialog{width:min(420px,calc(100% - 28px))}
+#hyle-dialog{width:min(620px,calc(100% - 28px))}
+.hyle-dialog .dialog-head{margin-bottom:10px}
+.hyle-dialog h3{margin:22px 0 6px;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.hyle-dialog p{margin:0;font-size:14px;line-height:1.65;color:var(--text2)}
+.hyle-dialog .hyle-lead{font-size:15px;color:var(--cream)}
+.hyle-dialog cite{font-style:italic}
 #confirm-message{font-size:12px;color:var(--text2);line-height:1.8;overflow-wrap:anywhere}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;width:max-content;max-width:calc(100% - 32px);padding:12px 17px;border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);background:var(--panel2);color:var(--text);font-size:12px}
 .noscript{position:fixed;bottom:20px;left:20px;z-index:200;background:var(--panel);border:1px solid var(--accent);padding:20px}
@@ -287,6 +299,7 @@ dialog form>.checkbox-label{flex-direction:row;align-items:center;gap:9px;min-he
   .welcome{height:180px;padding:0 22px;border-radius:12px}
   .hero-art:after{background:linear-gradient(90deg,rgba(8,13,18,.9),rgba(8,13,18,.5) 60%,rgba(8,13,18,.15))}
   .greet{font-size:13px}.clock{font-size:50px}.date{font-size:13px}
+  .hyle-dialog p{font-size:13px}
   .library{margin-top:22px}
   .library-bar{flex-direction:column-reverse;align-items:stretch;gap:6px}
   .library-actions{justify-content:flex-end;padding-bottom:0}

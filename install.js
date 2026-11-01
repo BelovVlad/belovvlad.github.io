@@ -21,8 +21,8 @@ function installState() {
   const button = $('#install-app'), text = $('#install-text'), help = $('#install-help');
   if (!button) return;
   if (installed()) {
-    $('#install-title').textContent = 'Вы в приложении PweB';
-    text.textContent = 'Сайты PweB открываются в этом окне. Хаб и сохранённые материалы НГУ работают без интернета.';
+    $('#install-title').textContent = 'Вы в приложении Hyle';
+    text.textContent = 'Сайты Hyle открываются в этом окне. Хаб и сохранённые материалы НГУ работают без интернета.';
     button.hidden = true; help.hidden = true; return;
   }
   button.hidden = false;
