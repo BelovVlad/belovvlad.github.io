@@ -166,6 +166,8 @@
       this.canvas.width = Math.round(this.w * ratio); this.canvas.height = Math.round(this.h * ratio);
       this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       this.measureQuiet(box);
+      // A fixed element (NSU's sidebar) stays on screen while the page scrolls: its field must not scroll either.
+      this.pinnedToScreen = getComputedStyle(this.el).position === 'fixed';
       const style = getComputedStyle(this.el);
       this.cream = rgb(style.getPropertyValue('--cream'), '234,212,183');
       this.red = rgb(style.getPropertyValue('--accent'), '214,76,80');
@@ -194,7 +196,8 @@
       if (!w || !h) return;
       const scale = settings.gap / 13, gap = (o.gap || 11) * scale, wave = WAVES[waveName()];
       // Page coordinates of the canvas: the field is one for the whole page.
-      const box = this.canvas.getBoundingClientRect(), ox = box.left + scrollX, oy = box.top + scrollY;
+      const box = this.canvas.getBoundingClientRect(), page = !this.pinnedToScreen;
+      const ox = box.left + (page ? scrollX : 0), oy = box.top + (page ? scrollY : 0);
       // A corner patch reaches a share of the diagonal, a row band a share of the width, never further than maxReach px.
       pointer.gap = gap;
       const spread = Math.min(o.reach * (o.anchor === 'right' ? w : Math.hypot(w, h)), o.maxReach || Infinity);
@@ -352,18 +355,6 @@
   try { arrived = +sessionStorage.getItem('hyle.arrive') || 0; sessionStorage.removeItem('hyle.arrive'); } catch {}
   if (Date.now() - arrived < 4000 && animate()) sweep(null, { kind: 'reveal', fixed: true, duration: 650 });
   document.documentElement.classList.remove('dots-arrive');
-  // Any dialog (the hub's settings, NSU's windows) opens with a ring of dots spreading from the button that opened it
-  // (a band down the window when it was opened otherwise).
-  let pressed = null;
-  addEventListener('pointerdown', event => { pressed = { x: event.clientX, y: event.clientY, at: performance.now() }; }, { capture: true, passive: true });
-  new MutationObserver(records => {
-    for (const record of records) {
-      const dialog = record.target;
-      if (dialog.tagName !== 'DIALOG' || !dialog.open || !animate()) continue;
-      const box = dialog.getBoundingClientRect(), near = pressed && performance.now() - pressed.at < 1500;
-      sweep(dialog, near ? { from: 'point', origin: { x: pressed.x - box.left, y: pressed.y - box.top }, duration: 800 } : { duration: 650 });
-    }
-  }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['open'] });
   // Back to a page kept in the browser's memory: it must not stay under the cover.
   addEventListener('pageshow', event => { if (event.persisted) for (const c of document.querySelectorAll('.dots-sweep')) c.remove(); });
 
