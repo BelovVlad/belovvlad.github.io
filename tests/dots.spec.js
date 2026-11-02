@@ -23,6 +23,52 @@ test('card dots follow mouse hover and keyboard focus', async ({ page }) => {
   expect(await page.evaluate(() => window.contextMenuPrevented)).toBe(false);
 });
 
+test('dot settings are shared, kept and switch patches always on or off', async ({ page }) => {
+  await page.goto('/');
+  const dots = cardFor(page).locator('.dots-canvas');
+  await page.locator('#settings-button').click();
+  await expect(page.locator('#dots-wave option')).toHaveText(['Бегущая волна', 'Линза', 'Мембрана', 'Мерцание', 'Случайная']);
+  await page.locator('#dots-show').selectOption('always');
+  await page.locator('#dots-wave').selectOption('membrane');
+  await page.locator('#dots-gap').fill('16');
+  await expect(page.locator('output[data-dots-out="gap"]')).toHaveText('16 px');
+  await page.keyboard.press('Escape');
+  await expect(dots).toHaveCSS('opacity', '1');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('hyle.dots.v1')))).toMatchObject({ wave: 'membrane', show: 'always', gap: 16 });
+  await page.reload();
+  await expect(cardFor(page).locator('.dots-canvas')).toHaveCSS('opacity', '1');
+  // Another tab or Hyle site switches them off: this page follows without a reload.
+  await page.evaluate(() => {
+    const value = JSON.stringify({ wave: 'lens', show: 'off', gap: 13, speed: 1 });
+    localStorage.setItem('hyle.dots.v1', value);
+    dispatchEvent(new StorageEvent('storage', { key: 'hyle.dots.v1', newValue: value }));
+  });
+  await cardFor(page).hover();
+  await expect(cardFor(page).locator('.dots-canvas')).toHaveCSS('opacity', '0');
+  expect(await page.evaluate(() => PwebDots.settings.wave)).toBe('lens');
+});
+
+test('a link to another Hyle site sinks the page under dots, and the next page comes up from them', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => { const a = Object.assign(document.createElement('a'), { id: 'to-nsu', href: '/NSU_FP_Y4_S1/', textContent: 'НГУ' }); document.body.append(a); });
+  const left = page.waitForURL('**/NSU_FP_Y4_S1/');
+  await page.locator('#to-nsu').click();
+  await expect(page.locator('.dots-sweep')).toHaveCount(1);
+  await left;
+  // Arriving: the page is hidden by the head snippet until the cover is up, then the cover lifts.
+  await page.goto('/');
+  await page.evaluate(() => sessionStorage.setItem('hyle.arrive', String(Date.now())));
+  await page.reload();
+  await expect(page.locator('html')).not.toHaveClass(/dots-arrive/);
+  await expect(page.locator('.dots-sweep')).toHaveCount(0, { timeout: 3000 });
+  expect(await page.evaluate(() => sessionStorage.getItem('hyle.arrive'))).toBeNull();
+  // Switched off in the settings: links just navigate.
+  await page.evaluate(() => PwebDots.save({ transitions: false }));
+  await page.evaluate(() => { const a = Object.assign(document.createElement('a'), { id: 'to-dep', href: '/Department/', textContent: 'Кафедра' }); document.body.append(a); });
+  await page.locator('#to-dep').click();
+  await page.waitForURL('**/Department/');
+});
+
 test.describe('touch card dots', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
