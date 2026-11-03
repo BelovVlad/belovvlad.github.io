@@ -48,25 +48,14 @@ test('dot settings are shared, kept and switch patches always on or off', async 
   expect(await page.evaluate(() => PwebDots.settings.wave)).toBe('lens');
 });
 
-test('a link to another Hyle site sinks the page under dots, and the next page comes up from them', async ({ page }) => {
+test('a link to another Hyle site just navigates, without a cover of dots', async ({ page }) => {
   await page.goto('/');
+  await expect(page.locator('#dots-transitions')).toHaveCount(0);
   await page.evaluate(() => { const a = Object.assign(document.createElement('a'), { id: 'to-nsu', href: '/NSU_FP_Y4_S1/', textContent: 'НГУ' }); document.body.append(a); });
   const left = page.waitForURL('**/NSU_FP_Y4_S1/');
   await page.locator('#to-nsu').click();
-  await expect(page.locator('.dots-sweep')).toHaveCount(1);
   await left;
-  // Arriving: the page is hidden by the head snippet until the cover is up, then the cover lifts.
-  await page.goto('/');
-  await page.evaluate(() => sessionStorage.setItem('hyle.arrive', String(Date.now())));
-  await page.reload();
-  await expect(page.locator('html')).not.toHaveClass(/dots-arrive/);
-  await expect(page.locator('.dots-sweep')).toHaveCount(0, { timeout: 3000 });
   expect(await page.evaluate(() => sessionStorage.getItem('hyle.arrive'))).toBeNull();
-  // Switched off in the settings: links just navigate.
-  await page.evaluate(() => PwebDots.save({ transitions: false }));
-  await page.evaluate(() => { const a = Object.assign(document.createElement('a'), { id: 'to-dep', href: '/Department/', textContent: 'Кафедра' }); document.body.append(a); });
-  await page.locator('#to-dep').click();
-  await page.waitForURL('**/Department/');
 });
 
 test.describe('touch card dots', () => {
