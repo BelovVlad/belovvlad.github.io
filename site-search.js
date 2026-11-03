@@ -12,6 +12,9 @@ export function pathFacets(path) {
   return { subject, section: SECTION_WORDS.find(([word]) => low.includes(word))?.[1] || raw };
 }
 
+// Code files (Python, C++, Makefile…) open in the site's notebook/code.html, a hit is a line.
+const CODE = /\.(py|c|h|cc|cpp|cxx|hpp|hh|sh|ps1|js|mjs|json|ya?ml|toml|ini|cfg|md|txt|m|jl|wl|tex|r)$|(^|\/)makefile$/i;
+
 // One site from SITE_SEARCH (config.js): base holds search-worker.js, search-index/ and the readers.
 export function materialsSource({ id, name, label, base, home, searchHash = false, facets = [], facetsFromPath = false, exclude = [], skipFolders = [], links = {} }) {
   let filesPromise = null, workerPromise = null, run = 0, pending = null;
@@ -22,7 +25,7 @@ export function materialsSource({ id, name, label, base, home, searchHash = fals
       return response.json();
     }).then(data => {
       // Same selection as the site's own catalogue.
-      const rows = (data.files || []).filter(x => x?.path && /\.(pdf|ipynb)$/i.test(x.path) && !exclude.includes(x.path) && !skipFolders.some(folder => x.path.includes('/' + folder + '/')));
+      const rows = (data.files || []).filter(x => x?.path && (/\.(pdf|ipynb)$/i.test(x.path) || CODE.test(x.path)) && !exclude.includes(x.path) && !skipFolders.some(folder => x.path.includes('/' + folder + '/')));
       for (const row of rows) meta.set(row.path, row);
       return rows.map(row => ({ path:row.path, title:row.title || row.path.split('/').pop(), subject:row.subject || '', section:row.section || '', ext:'.' + String(row.type || row.path.split('.').pop()).toLowerCase(), description:'' }));
     }).catch(error => { filesPromise = null; throw error; });
@@ -46,12 +49,12 @@ export function materialsSource({ id, name, label, base, home, searchHash = fals
   function link(path, location, query) {
     const row = meta.get(path) || {}, params = new URLSearchParams({ file:path, subject:row.subject || '', title:row.title || '' });
     if (links[path]) return base + links[path];
-    const pdf = /\.pdf$/i.test(path);
-    if (location) params.set(pdf ? 'page' : 'cell', location);
+    const pdf = /\.pdf$/i.test(path), code = CODE.test(path);
+    if (location) params.set(pdf ? 'page' : code ? 'line' : 'cell', location);
     if (row.version) params.set('v', row.version);
     if (row.reason === 'lfs') params.set('lfs', '1');
     if (query) params.set('find', query);
-    return base + (pdf ? 'pdfjs/viewer.html?' : 'notebook/viewer.html?') + params.toString().replace(/\+/g, '%20');
+    return base + (pdf ? 'pdfjs/viewer.html?' : code ? 'notebook/code.html?' : 'notebook/viewer.html?') + params.toString().replace(/\+/g, '%20');
   }
   return {
     id, name, label: label || name, facets,
@@ -66,7 +69,7 @@ export function materialsSource({ id, name, label, base, home, searchHash = fals
       return {
         stems, incomplete,
         groups: groups.map(group => {
-          const row = meta.get(group.path) || {}, pdf = /\.pdf$/i.test(group.path);
+          const row = meta.get(group.path) || {}, pdf = /\.pdf$/i.test(group.path), code = CODE.test(group.path);
           const { subject, section } = facetsFromPath ? pathFacets(group.path) : { subject:row.subject || '', section:row.section || '' };
           return {
             title: row.title || group.path.split('/').pop(),
@@ -75,7 +78,7 @@ export function materialsSource({ id, name, label, base, home, searchHash = fals
             badge: row.subject || '',
             url: link(group.path, group.hits[0]?.page || 0, query),
             snippet: group.hits[0]?.snippet || '',
-            hits: group.hits.map(hit => ({ label: hit.page ? (pdf ? 'стр. ' : 'ячейка ') + hit.page : (pdf ? 'PDF' : 'Notebook'), url: link(group.path, hit.page, query) }))
+            hits: group.hits.map(hit => ({ label: hit.page ? (pdf ? 'стр. ' : code ? 'строка ' : 'ячейка ') + hit.page : (pdf ? 'PDF' : code ? 'Код' : 'Notebook'), url: link(group.path, hit.page, query) }))
           };
         })
       };
