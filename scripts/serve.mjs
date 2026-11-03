@@ -28,4 +28,4 @@ const server = http.createServer(async (req, res) => {
     res.end(body);
   } catch { res.writeHead(404).end('Not found'); }
 });
-server.listen(port, '127.0.0.1', () => console.log(`PweB Home: http://127.0.0.1:${port}`));
+server.listen(port, '127.0.0.1', () => console.log(`Hyle Home: http://127.0.0.1:${port}`));

@@ -1,4 +1,4 @@
-// Full-text search in the other PweB sites. They share this origin, so the hub runs each
+// Full-text search in the other Hyle sites. They share this origin, so the hub runs each
 // site's own search worker over its own index and links straight into its reader.
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 

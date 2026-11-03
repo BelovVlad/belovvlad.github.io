@@ -1,4 +1,4 @@
-"""PweB logo: a halftone sphere — dots laid out like sunflower seeds (golden angle), so the edge is a true circle —
+"""Hyle logo: a halftone sphere — dots laid out like sunflower seeds (golden angle), so the edge is a true circle —
 lit from the upper right, with a round red glint where the light hits.
 
 Each dot's size is how much light the sphere's surface catches there, and the dots also thin out toward the rim, so the
