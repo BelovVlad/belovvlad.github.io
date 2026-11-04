@@ -1,4 +1,4 @@
-import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN } from './config.js';
+import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, HELPER_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -65,6 +65,11 @@ export function migrateConfig(config) {
     resources = resources.map(r => r.id === DRAFT_TEXT.id && !r.url && r.description === DRAFT_TEXT.old ? {...r,description:DRAFT_TEXT.text} : r);
   }
   if (config.revision < 10) resources = resources.map(r => r.url.startsWith(FORMER_ORIGIN) ? {...r,url:ORIGIN + r.url.slice(FORMER_ORIGIN.length)} : r);
+  if (config.revision < 11 && !resources.some(r => r.id === HELPER_RESOURCE.id || r.url === HELPER_RESOURCE.url)) {
+    // Next to the NSU card's section if it was moved; Education by default, the first section otherwise.
+    const home = [resources.find(r => r.id === 'nsu-s1')?.category, HELPER_RESOURCE.category].find(id => categories.some(c => c.id === id)) ?? categories[0]?.id;
+    if (home) resources.push({...HELPER_RESOURCE,category:home});
+  }
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }
 

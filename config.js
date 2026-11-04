@@ -1,4 +1,4 @@
-export const CURRENT_REVISION = 10;
+export const CURRENT_REVISION = 11;
 // The domain of every site (GitHub Pages of belovvlad.github.io with a custom domain).
 export const ORIGIN = 'https://hyle.space/';
 // Revision 10: cards saved with the former github.io address move to the domain.
@@ -24,12 +24,14 @@ export const DIPLOMA_PUBLIC_COPY = 'https://belovvlad.github.io/diploma/';
 export const DIPLOMA_CLOUDFLARE = 'https://pweb-diploma.pages.dev/';
 // Revision 8: the Department site (course literature, own repository) joins Education.
 export const DEPARTMENT_RESOURCE = { id:'department', title:'Кафедра', description:'Литература курсов кафедры: циклические ускорители, электронная оптика и физика пучков.', url:ORIGIN + 'Department/', category:'education', icon:'book', favorite:true };
+// Revision 11: the Helper of the Physics Faculty (literature by semester, own repository) joins Education.
+export const HELPER_RESOURCE = { id:'helper-ff', title:'Хелпер ФФ', description:'Литература физфака НГУ по семестрам и предметам.', url:ORIGIN + 'Helper_PF_NSU/', category:'education', icon:'book', favorite:true };
 // Revision 9: the seed sections get Russian names (only where the user kept the original name),
 // and the draft of the second semester says why it has no address yet.
 export const CATEGORY_RENAMES = { education:['Education','Учёба'], projects:['Projects','Проекты'], tools:['Tools','Инструменты'], links:['Links','Ссылки'], personal:['Personal','Личное'] };
 export const DRAFT_TEXT = { id:'nsu-s2', old:'Материалы следующего семестра.', text:'Заготовка: адрес появится, когда начнётся семестр.' };
 // Monograms of the seed cards; any other card takes the initials of its title unless one is set.
-export const SEED_MONOGRAMS = { 'nsu-s1':'НГУ', 'nsu-s2':'НГУ', department:'КФ', 'diploma-materials':'ДП', github:'GH' };
+export const SEED_MONOGRAMS = { 'nsu-s1':'НГУ', 'nsu-s2':'НГУ', department:'КФ', 'helper-ff':'ФФ', 'diploma-materials':'ДП', github:'GH' };
 // Sites on this origin whose content the hub search also looks through (their own search
 // worker and index under base). facets are the filters shown when one site is chosen.
 export const SITE_SEARCH = [
@@ -57,6 +59,7 @@ export default {
     { id: 'nsu-s2', title: 'НГУ · 4 курс, 2 семестр', description: 'Заготовка: адрес появится, когда начнётся семестр.', url: '', category: 'education', icon: 'book', favorite: false },
     DEPARTMENT_RESOURCE,
     ...DIPLOMA_RESOURCES,
+    HELPER_RESOURCE,
     { id: 'github', title: 'GitHub', description: 'Репозитории, исходный код и новые идеи.', url: 'https://github.com/BelovVlad', category: 'links', icon: 'github', favorite: false }
   ],
   settings: { theme: 'dark', view: 'grid', newTab: true, showTasks: false },
