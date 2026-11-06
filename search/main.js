@@ -16,9 +16,10 @@ try {
   document.querySelector('.search-field').id='searchbox';
   document.querySelector('input[type="search"]').id='search';
   document.querySelector('[data-action="ai"]').id='ai-button';
-  window.HelperScope=()=>{
+  window.HyleAIScope=()=>{
     const s=app.getState();
-    return { subject:s.subject, semester:s.semester, label:s.subject || (s.semester ? s.semester+' семестр':'все книги') };
+    const selected = s.sources.filter(id => ['helper','department','nsu'].includes(id)).map(id => id === 'nsu' ? 'nsu-y4s1' : id);
+    return { site: selected.length === 3 ? '' : selected.join('|') || '__none__', subject:s.subject, semester:s.semester };
   };
   await import('./ai.js');
   window.addEventListener('message',event=>{

@@ -3,9 +3,9 @@
 // dialog appears inside it. Answers come from the home server (api.hyle.space/ask, server-sent events)
 // and cite pages of the books; dialogs are kept only in this browser.
 // The same file runs on every Hyle subsite: a site may set window.HelperScope / window.HelperBookPage.
+import { renderAnswer, sourceLink } from './ai-renderer.js';
+import { consumeSSE } from './ai-sse.js';
 const API = 'https://api.hyle.space';
-const BOOKS = 'https://books.hyle.space/';
-const READER = '/Helper_PF_NSU/viewer/pdfjs/viewer.html';
 const HOLD = 700, OPEN = 850, CLOSE = 420;
 const KEY = 'hyle.ai.key', STORE = 'hyle.ai.dialogs.v1';
 const still = matchMedia('(prefers-reduced-motion: reduce)');
@@ -28,13 +28,18 @@ function init() {
     <section class="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-title">
       <header class="ai-head">
         <button class="ai-icon" type="button" data-act="close" aria-label="Назад к поиску"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-        <div class="ai-title"><strong id="ai-title">Новый вопрос</strong><span id="ai-scope">ИИ по книгам Хелпера</span></div>
+        <div class="ai-title"><strong id="ai-title">Новый вопрос</strong><span id="ai-scope">ИИ по материалам Hyle</span></div>
         <button class="ai-icon" type="button" data-act="list" aria-label="Все диалоги"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/><path d="M12 8v4l3 2"/></svg></button>
         <button class="ai-icon" type="button" data-act="new" aria-label="Новый диалог"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       </header>
+      <div class="ai-filters" aria-label="Область поиска ИИ">
+        <label>Источник<select id="ai-source"><option value="">Все материалы</option><option value="helper">Хелпер ФФ</option><option value="nsu-y4s1">НГУ · 4 курс, 1 семестр</option><option value="department">Кафедра</option></select></label>
+        <label>Семестр<select id="ai-semester"><option value="">Все</option>${Array.from({length:8}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>
+        <label>Предмет<input id="ai-subject" placeholder="Все предметы" aria-label="Название предмета"></label>
+      </div>
       <div class="ai-messages" id="ai-messages" aria-live="polite"></div>
       <form class="ai-compose" id="ai-compose">
-        <textarea id="ai-input" rows="1" placeholder="Спросите о чём-нибудь из книг" aria-label="Вопрос"></textarea>
+        <textarea id="ai-input" rows="1" placeholder="Спросите о материалах Hyle" aria-label="Вопрос"></textarea>
         <button class="ai-send" type="submit" aria-label="Спросить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
       </form>
       <div class="ai-sheet" id="ai-sheet" hidden>
@@ -161,10 +166,19 @@ function init() {
   const now = () => new Date().toISOString();
   const find = id => dialogs.find(d => d.id === id);
   function persist() { dialogs = dialogs.filter(d => d.messages.length).sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 60); save(STORE, dialogs); }
-  function scopeNow() { return window.HelperScope?.() || { semester: '', subject: '', label: 'все книги' }; }
+  const sourceFilter = layer.querySelector('#ai-source'), semesterFilter = layer.querySelector('#ai-semester'), subjectFilter = layer.querySelector('#ai-subject');
+  function scopeNow() { return { site: sourceFilter.value, semester: semesterFilter.value, subject: subjectFilter.value.trim() }; }
   function prepare() {
-    const scope = scopeNow();
-    layer.querySelector('#ai-scope').textContent = 'ИИ по книгам · ' + scope.label;
+    const scope = window.HyleAIScope?.() || {};
+    if (scope.site != null) {
+      if (![...sourceFilter.options].some(o => o.value === scope.site)) {
+        const option = document.createElement('option'); option.value = scope.site; option.textContent = 'Выбранные источники'; sourceFilter.append(option);
+      }
+      sourceFilter.value = scope.site;
+    }
+    if (scope.semester != null) semesterFilter.value = scope.semester;
+    if (scope.subject != null) subjectFilter.value = scope.subject;
+    layer.querySelector('#ai-scope').textContent = 'ИИ · Helper, НГУ и кафедра';
     if (pending || !currentId || !find(currentId)) newDialog(); else renderDialog();
   }
   function afterOpen() {
@@ -178,7 +192,7 @@ function init() {
     messages.replaceChildren();
     if (!d) {
       const hello = document.createElement('div'); hello.className = 'ai-empty';
-      hello.innerHTML = `<p>Спросите о формуле, определении или задаче. Ответ соберётся из книг Хелпера, со ссылками на страницы.</p><p class="ai-tip">В следующий раз можно сразу зажать строку поиска с вопросом.</p>`;
+      hello.innerHTML = `<p>Спросите о формуле, определении или задаче. Поиск охватывает Helper, материалы НГУ и кафедры. В ответе будут ссылки на страницы файлов или ячейки notebooks.</p><p class="ai-tip">В следующий раз можно сразу зажать строку поиска с вопросом.</p>`;
       messages.append(hello);
     } else for (const m of d.messages) messages.append(m.role === 'user' ? userBubble(m.content) : botBubble(m));
     if (!load(KEY, '')) messages.append(keyCard());
@@ -186,28 +200,29 @@ function init() {
   }
   const userBubble = text => { const b = document.createElement('div'); b.className = 'ai-me'; b.textContent = text; return b; };
   function bookLink(s, q) {
-    return window.HelperBookPage?.(s.book, s.page, q) || READER + '?' + new URLSearchParams({ file: BOOKS + s.book.split('/').map(encodeURIComponent).join('/'), title: s.title, page: s.page });
+    return sourceLink(s);
   }
   function format(text, sources) {
-    let html = esc(text);
-    html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
-    html = html.replace(/\[(\d+)\]/g, (all, n) => { const s = sources?.[n - 1]; return s ? `<a class="ai-cite" href="${esc(bookLink(s))}">[${n}]</a>` : all; });
-    return html;
+    return renderAnswer(text, sources);
   }
   function botBubble(m) {
     const b = document.createElement('div'); b.className = 'ai-bot';
     const who = document.createElement('span'); who.className = 'ai-who'; who.innerHTML = '<img src="' + (document.querySelector('.brand img')?.getAttribute('src') || '') + '" alt="" width="14" height="14"><span>Hyle</span>';
     const body = document.createElement('div'); body.className = 'ai-text';
-    if (m.error) { body.classList.add('ai-error'); body.textContent = m.error; }
+    if (m.error && !m.content) { body.classList.add('ai-error'); body.textContent = m.error; }
     else if (m.content) body.innerHTML = format(m.content, m.sources);
     else body.innerHTML = '<span class="ai-skel"></span><span class="ai-skel" style="width:78%"></span><span class="ai-skel" style="width:52%"></span>';
     b.append(who, body);
+    if (m.content && (m.error || m.interrupted)) {
+      const note = document.createElement('p'); note.className = 'ai-error'; note.textContent = m.error || 'Ответ прерван. Показана полученная часть.'; b.append(note);
+    }
     const used = (m.sources || []).filter((s, i) => (m.content || '').includes('[' + (i + 1) + ']'));
     if (used.length) {
       const list = document.createElement('div'); list.className = 'ai-sources';
       for (const s of m.sources) {
         const i = m.sources.indexOf(s) + 1; if (!(m.content || '').includes('[' + i + ']')) continue;
-        const a = document.createElement('a'); a.href = bookLink(s); a.innerHTML = `<b>[${i}]</b><span>${esc(s.title)}</span><em>стр. ${esc(s.page)}</em>`; list.append(a);
+        const href = bookLink(s); if (!href) continue;
+        const a = document.createElement('a'); a.href = href; a.rel = 'noopener noreferrer'; a.innerHTML = `<b>[${i}]</b><span>${esc(s.title)}</span><em>${s.location_type === 'cell' || s.book?.endsWith('.ipynb') ? 'яч.' : s.location_type === 'line' ? 'строка' : 'стр.'} ${esc(s.page)}</em>`; list.append(a);
       }
       b.append(list);
     }
@@ -221,6 +236,7 @@ function init() {
   }
   let lastFailed = '';
   async function ask(question, retry) {
+    if (abort) return;
     question = question.trim(); if (!question) return;
     let d = find(currentId);
     if (!d) { d = { id: Date.now().toString(36), title: question.slice(0, 80), updated: now(), messages: [] }; dialogs.unshift(d); currentId = d.id; }
@@ -228,48 +244,52 @@ function init() {
     if (!retry || d.messages.at(-1)?.content !== question) d.messages.push({ role: 'user', content: question });
     const answer = { role: 'assistant', content: '', sources: [] }; d.messages.push(answer); d.updated = now();
     renderDialog();
-    const bubble = messages.querySelector('.ai-bot:last-of-type'), status = document.createElement('span'); status.className = 'ai-status'; status.textContent = 'ищу в книгах…';
+    const bubble = messages.querySelector('.ai-bot:last-of-type'), status = document.createElement('span'); status.className = 'ai-status'; status.textContent = 'ищу в материалах…';
     bubble?.querySelector('.ai-who')?.append(status);
     const key = load(KEY, '');
-    const fail = text => { answer.error = text; answer.content = ''; persist(); renderDialog(); };
+    const refresh = () => { if (currentId === d.id) renderDialog(); };
+    const fail = text => { answer.error = text; persist(); refresh(); };
     if (!key) { d.messages.pop(); lastFailed = question; persist(); renderDialog(); return; }
-    abort = new AbortController();
+    const controller = new AbortController(); abort = controller;
     const scope = scopeNow();
     try {
       const response = await fetch(API + '/ask', {
-        method: 'POST', signal: abort.signal,
+        method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify({ q: question, history, site: 'helper', ...(scope.semester ? { semester: scope.semester } : {}), ...(scope.subject ? { subject: scope.subject } : {}) }),
+        body: JSON.stringify({ q: question, history, ...(scope.site ? { site: scope.site } : {}), ...(scope.semester ? { semester: scope.semester } : {}), ...(scope.subject ? { subject: scope.subject } : {}) }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        if (response.status === 401) { save(KEY, ''); localStorage.removeItem(KEY); d.messages.pop(); lastFailed = question; persist(); renderDialog(); messages.querySelector('.ai-key span').textContent = 'Ключ не подошёл. Проверьте его и вставьте ещё раз.'; return; }
+        if (response.status === 401) {
+          save(KEY, ''); try { localStorage.removeItem(KEY); } catch {}
+          d.messages = d.messages.filter(m => m !== answer); lastFailed = question; persist(); refresh();
+          const hint = messages.querySelector('.ai-key span'); if (hint) hint.textContent = 'Ключ не подошёл. Проверьте его и вставьте ещё раз.';
+          return;
+        }
         return fail(data.error ? 'Не получилось: ' + data.error + '.' : 'Сервер ответил ' + response.status + '.');
       }
-      const reader = response.body.getReader(), decoder = new TextDecoder();
-      let buffer = '', painted = 0;
+      if (!response.headers.get('Content-Type')?.includes('text/event-stream')) throw new Error('Unexpected response');
+      let painted = 0, completed = false;
       const text = bubble.querySelector('.ai-text');
-      for (;;) {
-        const { value, done } = await reader.read(); if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let cut;
-        while ((cut = buffer.indexOf('\n\n')) >= 0) {
-          const chunk = buffer.slice(0, cut); buffer = buffer.slice(cut + 2);
-          const event = /^event: (.+)$/m.exec(chunk)?.[1], data = /^data: (.*)$/m.exec(chunk)?.[1];
-          if (!event || data == null) continue;
-          let payload = {}; try { payload = JSON.parse(data); } catch {}
-          if (event === 'status') status.textContent = payload.t || '';
-          else if (event === 'sources') answer.sources = payload.items || [];
-          else if (event === 'delta') { answer.content += payload.t || ''; if (performance.now() - painted > 60) { painted = performance.now(); text.innerHTML = format(answer.content, answer.sources); keepBottom(); } }
-          else if (event === 'error') { answer.error = 'Не получилось: ' + (payload.error || payload.t || 'ошибка сервера') + '.'; }
-        }
-      }
+      await consumeSSE(response.body, (event, payload) => {
+        if (event === 'status') status.textContent = payload.t || '';
+        else if (event === 'sources') answer.sources = Array.isArray(payload.items) ? payload.items.slice(0, 30) : [];
+        else if (event === 'delta' && typeof payload.t === 'string') {
+          if (answer.content.length + payload.t.length > 150000) throw new Error('Answer too large');
+          answer.content += payload.t;
+          if (performance.now() - painted > 100 && currentId === d.id) {
+            painted = performance.now(); text.innerHTML = format(answer.content, answer.sources); keepBottom();
+          }
+        } else if (event === 'error') answer.error = 'Не получилось: ' + (payload.message || payload.error || payload.t || 'ошибка сервера');
+        else if (event === 'done') completed = true;
+      });
+      answer.interrupted = !completed && !answer.error;
       if (!answer.content && !answer.error) answer.error = 'Ответ не пришёл. Попробуйте ещё раз.';
-      d.updated = now(); persist(); renderDialog();
+      d.updated = now(); persist(); refresh();
     } catch (error) {
-      if (error.name === 'AbortError') { if (!answer.content) d.messages.splice(-2, 2); else d.updated = now(); persist(); return; }
+      if (error.name === 'AbortError') { answer.interrupted = true; d.updated = now(); persist(); refresh(); return; }
       fail('Домашний сервер не отвечает. Проверьте, что ноутбук включён, и попробуйте ещё раз.');
-    } finally { abort = null; }
+    } finally { if (abort === controller) abort = null; }
   }
   function keepBottom() { if (messages.scrollHeight - messages.scrollTop - messages.clientHeight < 160) messages.scrollTop = messages.scrollHeight; }
 
