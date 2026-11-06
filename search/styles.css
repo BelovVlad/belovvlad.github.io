@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600&display=swap');
+
+#hyle-next { --stage: 720px; }
+#hyle-next > section { min-height: var(--stage); }
+#hyle-next .search-app {
+  --bg: light-dark(#f5f3ef, #080d12);
+  --panel: light-dark(#fcfbf8, #0e151c);
+  --hover: light-dark(#eeebe5, #141d26);
+  --line: light-dark(#d7d1c7, #25303a);
+  --subtle-line: light-dark(#e5dfd6, #1a242d);
+  --text: light-dark(#282a2b, #f1ede7);
+  --muted: light-dark(#6a665f, #99a5af);
+  --cream: light-dark(#624a33, #ead4b7);
+  --warm: light-dark(#8c623b, #b78b62);
+  --red: light-dark(#b3333b, #d64c50);
+  --on-red: #fff;
+  color-scheme: dark;
+  position: relative;
+  min-height: var(--stage);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font: 400 15px/1.5 'Bahnschrift', 'Roboto Condensed', 'Segoe UI', sans-serif;
+  text-align: left;
+  overflow: clip;
+  container-type: inline-size;
+}
+#hyle-next .search-app[data-mode='phone'] { max-width: 390px; margin-inline: auto; border-radius: 24px; }
+#hyle-next .search-app *, #hyle-next .search-app *::before, #hyle-next .search-app *::after { box-sizing: border-box; }
+#hyle-next .search-app [hidden] { display: none !important; }
+#hyle-next .search-app :is(h1, h2, h3, p, ul, fieldset) { margin: 0; }
+#hyle-next .search-app :is(button, input, select) { font: inherit; color: inherit; }
+#hyle-next .search-app button, #hyle-next .search-app select { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+#hyle-next .search-app button { min-height: 36px; padding: 7px 11px; touch-action: manipulation; }
+#hyle-next .search-app a { color: inherit; text-decoration: none; }
+#hyle-next .search-app button:hover, #hyle-next .search-app a:hover { background-color: var(--hover); }
+#hyle-next .search-app :is(button, a, select, input):focus-visible { outline: 2px solid var(--warm); outline-offset: 3px; }
+#hyle-next .search-app button.primary { color: var(--on-red); background: var(--red); border-color: var(--red); }
+#hyle-next .search-app button.quiet { border-color: transparent; background: transparent; }
+#hyle-next .search-app button.quiet:hover { background: var(--hover); }
+#hyle-next .search-app .muted { color: var(--muted); }
+#hyle-next .search-app .icon { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; flex: 0 0 auto; }
+#hyle-next .search-app .icon svg { width: 18px; height: 18px; stroke-width: 1.6; }
+#hyle-next .search-app .icon i::before { content: attr(data-fallback); font: 400 19px/1 system-ui, sans-serif; }
+#hyle-next .search-app .icon-button { display: inline-grid; place-items: center; width: 36px; padding: 0; }
+#hyle-next .search-app .topbar { display: flex; gap: 12px; align-items: center; justify-content: space-between; min-height: 65px; padding: 8px 25px; border-bottom: 1px solid var(--subtle-line); }
+#hyle-next .search-app .brand { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 500; }
+#hyle-next .search-app .brand img { width: 32px; height: 32px; }
+#hyle-next .search-app .brand small { color: var(--muted); font-size: 14px; font-weight: 400; border-left: 1px solid var(--line); padding-left: 12px; margin-left: 3px; }
+#hyle-next .search-app .top-actions { display: flex; align-items: center; gap: 5px; }
+#hyle-next .search-app .ai-trigger { display: grid; place-items: center; width: 44px; min-height: 44px; flex: 0 0 44px; padding: 0; }
+#hyle-next .search-app .ai-trigger img { display: block; width: 24px; height: 24px; pointer-events: none; }
+#hyle-next .search-app .match-count { color: var(--cream); font-size: 12px; margin-bottom: 8px; }
+#hyle-next .search-app .body { width: 100%; max-width: 880px; margin-inline: auto; padding: 22px 28px 25px; }
+#hyle-next .search-app .search-field { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 3px 7px 3px 15px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+#hyle-next .search-app .search-field:focus-within { border-color: var(--warm); outline: 1px solid var(--warm); outline-offset: 0; }
+#hyle-next .search-app .search-field > .icon { color: var(--muted); }
+#hyle-next .search-app .search-field input { min-width: 0; flex: 1; width: 100%; padding: 6px 0; font-size: 21px; font-weight: 400; color: var(--text); background: transparent; border: 0; outline: none; }
+#hyle-next .search-app .search-field input::placeholder { color: var(--muted); }
+#hyle-next .search-app .search-field input::-webkit-search-cancel-button { appearance: none; }
+#hyle-next .search-app .search-field button { color: var(--muted); }
+#hyle-next .search-app .query-note { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px; color: var(--muted); font-size: 12px; padding: 7px 1px 11px; }
+#hyle-next .search-app .tabs-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+#hyle-next .search-app .tabs { display: flex; min-width: 0; flex-wrap: wrap; gap: 4px; }
+#hyle-next .search-app .tabs button { min-height: 44px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding-inline: 12px; color: var(--muted); background: transparent; }
+#hyle-next .search-app .tabs button[aria-pressed='true'] { color: var(--text); border-bottom-color: var(--red); }
+#hyle-next .search-app .filter-button { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+#hyle-next .search-app .filter-badge { display: grid; place-items: center; min-width: 18px; height: 18px; border-radius: 5px; color: var(--cream); background: var(--hover); font-size: 11px; }
+#hyle-next .search-app .result-meta-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px; padding: 15px 0 7px; font-size: 12px; color: var(--muted); }
+#hyle-next .search-app .result-meta-bar .result-total { color: var(--text); }
+#hyle-next .search-app .sort { border: 0; padding: 3px 2px; background: transparent; color: var(--muted); font-size: 12px; max-width: 48%; }
+#hyle-next .search-app .active-filters { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 10px; }
+#hyle-next .search-app .active-filters button { min-height: 30px; padding: 4px 8px; font-size: 12px; color: var(--cream); }
+#hyle-next .search-app .results { list-style: none; padding: 0; }
+#hyle-next .search-app .result { position: relative; padding: 14px 0; border-bottom: 1px solid var(--subtle-line); }
+#hyle-next .search-app .result-main { display: grid; grid-template-columns: 34px minmax(0,1fr) 30px; align-items: center; gap: 13px; padding: 0; border-radius: 7px; }
+#hyle-next .search-app .file-badge { display: grid; place-items: center; width: 34px; height: 40px; border: 1px solid var(--line); border-radius: 7px; color: var(--warm); font-size: 9px; font-weight: 500; background: var(--panel); }
+#hyle-next .search-app .file-badge.pdf { color: light-dark(#a5333d, #e18b8e); border-color: color-mix(in srgb, var(--red) 26%, var(--line)); }
+#hyle-next .search-app .result-title { display: block; font-size: 17px; font-weight: 500; line-height: 1.35; letter-spacing: -.01em; overflow-wrap: anywhere; }
+#hyle-next .search-app .result-breadcrumb { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+#hyle-next .search-app .row-arrow { color: var(--muted); justify-self: end; }
+#hyle-next .search-app .result-detail { margin: 8px 30px 0 47px; }
+#hyle-next .search-app .snippet { color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; margin-bottom: 6px; }
+#hyle-next .search-app mark { color: var(--text); background: color-mix(in srgb, var(--red) 19%, var(--panel)); border-radius: 3px; padding-inline: 1px; }
+#hyle-next .search-app .page-links { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+#hyle-next .search-app .page-links a, #hyle-next .search-app .page-links button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 3px 8px; font-size: 12px; color: var(--cream); border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+#hyle-next .search-app .group-note { font-size: 11px; color: var(--muted); }
+#hyle-next .search-app .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding-top: 18px; }
+#hyle-next .search-app .pager button { padding: 8px 15px; }
+#hyle-next .search-app .search-status { display: flex; flex-wrap: wrap; gap: 6px 15px; color: var(--muted); font-size: 11px; padding-top: 15px; }
+#hyle-next .search-app .search-status span { display: inline-flex; align-items: center; gap: 5px; }
+#hyle-next .search-app .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--warm); }
+#hyle-next .search-app .error-note { color: light-dark(#a5333d, #e18b8e); }
+#hyle-next .search-app .empty { padding: 45px 12px; text-align: center; color: var(--muted); }
+#hyle-next .search-app .empty h2 { color: var(--cream); font-size: 24px; font-weight: 500; margin-bottom: 8px; }
+#hyle-next .search-app .empty button { margin-top: 15px; }
+#hyle-next .search-app .suggestions { padding: 32px 0; }
+#hyle-next .search-app .suggestions h2 { color: var(--cream); font-size: 24px; font-weight: 500; margin-bottom: 12px; }
+#hyle-next .search-app .suggestion-list { display: flex; flex-wrap: wrap; gap: 8px; }
+#hyle-next .search-app .coverage { margin-top: 30px; padding-top: 15px; border-top: 1px solid var(--subtle-line); font-size: 13px; color: var(--muted); }
+#hyle-next .search-app .launcher { max-width: 560px; margin: 50px auto; padding: 18px; }
+#hyle-next .search-app .launcher h1 { font-size: 33px; font-weight: 500; color: var(--cream); margin: 22px 0 15px; }
+#hyle-next .search-app .entry-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+#hyle-next .search-app .entry-nav button[aria-pressed='true'] { color: var(--cream); border-color: var(--warm); }
+#hyle-next .search-app .launch-search { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; text-align: left; }
+#hyle-next .search-app .scrim { position: absolute; inset: 0; z-index: 2; background: #0009; backdrop-filter: blur(3px); }
+#hyle-next .search-app .filter-dialog { position: absolute; inset: 80px 0 auto; z-index: 3; margin: 0 auto; width: min(460px, calc(100% - 40px)); max-width: none; padding: 22px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 70px #0005; }
+#hyle-next .search-app .dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+#hyle-next .search-app .dialog-header h2 { font-size: 24px; font-weight: 500; color: var(--cream); }
+#hyle-next .search-app .source-options { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; border: 0; padding: 0; }
+#hyle-next .search-app .source-options legend { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+#hyle-next .search-app .check { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px; }
+#hyle-next .search-app .check input { accent-color: var(--red); width: 16px; height: 16px; margin: 0; }
+#hyle-next .search-app .check .count { margin-left: auto; color: var(--muted); font-size: 12px; }
+#hyle-next .search-app .filter-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+#hyle-next .search-app .field { display: grid; gap: 7px; min-width: 0; font-size: 12px; color: var(--muted); }
+#hyle-next .search-app .field:first-child { grid-column: 1 / -1; }
+#hyle-next .search-app .field select { width: 100%; min-height: 42px; padding: 7px 9px; color: var(--text); font-size: 14px; background: var(--bg); }
+#hyle-next .search-app .dialog-footer { display: flex; gap: 9px; padding-top: 22px; }
+#hyle-next .search-app .dialog-footer .primary { flex: 1; min-height: 45px; }
+#hyle-next .search-app .locked-note { padding-top: 8px; color: var(--muted); font-size: 11px; }
+#hyle-next .search-app[data-density='compact'] .result { padding-block: 10px; }
+#hyle-next .search-app[data-excerpts='off'] .snippet { display: none; }
+
+@container (max-width: 620px) {
+  #hyle-next .search-app .topbar { padding: 7px 13px; min-height: 58px; }
+  #hyle-next .search-app .body { padding: 15px 15px 20px; }
+  #hyle-next .search-app .search-field { gap: 9px; padding-left: 12px; min-height: 53px; }
+  #hyle-next .search-app .search-field input { font-size: 18px; }
+  #hyle-next .search-app .submit-query { display: none; }
+  #hyle-next .search-app .query-note { font-size: 11px; padding-block: 8px; }
+  #hyle-next .search-app .tabs-bar { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 4px; }
+  #hyle-next .search-app .tabs { width: 100%; display: grid; grid-template-columns: .65fr 1fr 1.45fr .65fr .85fr; gap: 0; }
+  #hyle-next .search-app .tabs button { padding: 8px 1px; font-size: 13px; }
+  #hyle-next .search-app .filter-button { width: 44px; padding-inline: 0; justify-content: center; gap: 2px; }
+  #hyle-next .search-app .filter-label { display: none; }
+  #hyle-next .search-app .result-title { font-size: 16px; }
+  #hyle-next .search-app .result-breadcrumb { font-size: 12px; }
+  #hyle-next .search-app .result-main { grid-template-columns: 30px minmax(0,1fr) 18px; gap: 10px; }
+  #hyle-next .search-app .file-badge { width: 30px; height: 36px; }
+  #hyle-next .search-app .result-detail { margin-left: 40px; margin-right: 0; }
+  #hyle-next .search-app .result-meta-bar { padding-top: 9px; }
+  #hyle-next .search-app .filter-dialog { inset: 70px 0 auto; width: 100%; border-radius: 18px 18px 0 0; padding: 20px 17px; }
+  #hyle-next .search-app .check, #hyle-next .search-app .field select { min-height: 44px; }
+  #hyle-next .search-app .icon-button { min-width: 38px; min-height: 38px; }
+  #hyle-next .search-app .page-links a, #hyle-next .search-app .page-links button { min-height: 36px; }
+  #hyle-next .search-app .sort { max-width: 55%; }
+}
+@media (pointer: coarse) {
+  #hyle-next .search-app button, #hyle-next .search-app select, #hyle-next .search-app .page-links a { min-height: 44px; }
+  #hyle-next .search-app .icon-button { min-width: 44px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  #hyle-next .search-app .filter-dialog[open] { animation: hyle-dialog-in .15s ease-out; }
+  @keyframes hyle-dialog-in { from { transform: translateY(12px); } to { transform: translateY(0); } }
+}

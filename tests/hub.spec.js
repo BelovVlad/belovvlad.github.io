@@ -32,7 +32,14 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   await expect(libraryCard(page,'nsu-s1').locator('a')).toHaveAttribute('href',defaults.resources[0].url);
   await expect(libraryCard(page,'nsu-s2').locator('a')).toHaveCount(0);
-  await page.keyboard.press('Control+k'); await expect(page.locator('#search')).toBeFocused();
+  await page.route('https://hyle.space/Helper_PF_NSU/materials.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle.space/Department/viewer/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle.space/NSU_FP_Y4_S1/docs/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
+  await page.keyboard.press('Control+k');
+  const sharedSearch=page.frameLocator('iframe[title="Общий поиск Hyle"]');
+  await expect(sharedSearch.locator('input[type="search"]')).toBeFocused();
+  await sharedSearch.getByRole('button',{name:'Закрыть поиск',exact:true}).click();
+  await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
   await page.locator('#search').fill('физического');await expect(page.locator('#resources .resource-card')).toHaveCount(1);
   await page.locator('#search').fill('Учёба');await expect(page.locator('#resources .resource-card')).toHaveCount(4);
   await page.locator('#search').fill('Личное');await expect(page.locator('[data-category-section=personal]')).toBeVisible();
