@@ -82,6 +82,15 @@ export class SearchEngine {
     return { query: this.query, hits: [...this.hits], status: { ...this.status }, helperOffset: this.helperOffset, helperTotal: this.helperTotal };
   }
 
+  setCatalog(catalog) {
+    this.run++;
+    this.abort?.abort();
+    for (const worker of this.workers.values()) worker.terminate();
+    this.workers.clear();
+    this.catalog = catalog;
+    this.byId = new Map(catalog.map(doc => [doc.id, doc]));
+  }
+
   emit() { this.onUpdate?.(this.snapshot()); }
 
   worker(site) {

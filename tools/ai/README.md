@@ -23,6 +23,18 @@ Generate local catalogs with `node site/scripts/build.mjs` in each site first.
 The test uses synthetic SSE replies and a test-only browser key. Screenshots are
 written to ignored `artifacts/`. It never calls a real AI provider.
 
+`node tests/ux-browser.mjs` uses the same setup to check immediate Home → search
+opening while remote catalogs are deliberately held pending, preservation of the
+query, collapsible AI filters, keyboard viewport resizing in an iframe and on a
+standalone site, scroll-controlled header visibility, and return navigation.
+It also checks desktop filters. Viewport changes simulate the on-screen keyboard;
+physical iOS/Android keyboard behavior still needs a device check. The overlay
+follows the top-level VisualViewport because an iframe's visual viewport alone
+does not describe the area covered by the keyboard.
+
+`node --test tests/catalog.test.mjs` checks partial loading and source failure
+without contacting the network.
+
 Markdown is parsed with markdown-it and the texmath token plugin. Raw HTML is
 disabled; HTML/MathML/SVG output is sanitized with DOMPurify. KaTeX uses
 `trust: false`, bounded macro expansion and fresh macro state per expression.

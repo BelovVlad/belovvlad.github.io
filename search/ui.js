@@ -1,9 +1,15 @@
 import { sourceNames, kindNames, termsFor, groupedResults, documentUrl } from './engine.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-const fallback = { search: '⌕', x: '×', 'arrow-up-right': '↗', 'arrow-left': '←', 'sliders-horizontal': '☷', sun: '☼', moon: '☾', globe: '◎', lock: '▣', 'corner-down-left': '↵', 'chevron-down': '⌄' };
-const icon = name => `<span class="icon" aria-hidden="true"><i data-lucide="${name}" data-fallback="${fallback[name] || '·'}"></i></span>`;
-const icons = () => globalThis.lucide?.createIcons({ attrs: { width: 18, height: 18 } });
+const shapes = {
+  search:'<circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/>', x:'<path d="m6 6 12 12M6 18 18 6"/>',
+  'arrow-up-right':'<path d="M6 18 18 6M6 6h12v12"/>', 'arrow-left':'<path d="m12 5-7 7 7 7M5 12h16"/>',
+  'sliders-horizontal':'<path d="M3 6h5m4 0h9M3 12h11m4 0h3M3 18h3m4 0h11M8 3v6m6 0v6m-8 0v6"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+  lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  'corner-down-left':'<path d="M20 4v7a4 4 0 0 1-4 4H4m5-5-5 5 5 5"/>','chevron-down':'<path d="m6 9 6 6 6-6"/>'
+};
+const icon = name => `<span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${shapes[name] || ''}</svg></span>`;
 const sourceIds = Object.keys(sourceNames);
 
 function highlight(text, query) {
@@ -27,7 +33,8 @@ export function mountSearch(root, catalog, engine, options = {}) {
   let timer;
   let interacted = false;
   const views = [];
-  const subjects = [...new Set(catalog.map(doc => doc.subject).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+  let subjects = [...new Set(catalog.map(doc => doc.subject).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+  let catalogLoading = Boolean(options.loading);
   let entryScroll = 0;
   const historyKey = 'hyleUnifiedSearch';
   function setSearchOpen(open, fromHistory = false) {
@@ -75,7 +82,6 @@ export function mountSearch(root, catalog, engine, options = {}) {
     const results = filtered(baseResults);
     if (state.sort === 'title') results.sort((a, b) => a.doc.title.localeCompare(b.doc.title, 'ru'));
     for (const view of views) view.render(results);
-    icons();
   }
 
   function search(immediate = false) {
@@ -96,7 +102,7 @@ export function mountSearch(root, catalog, engine, options = {}) {
     section.append(app);
     app.innerHTML = `<header class="topbar"><div class="brand"><img src="${escape(options.logo || './logo.svg')}" alt=""><span>Hyle</span><small>Поиск</small></div><div class="top-actions"><button type="button" class="quiet icon-button" data-action="close" aria-label="Закрыть поиск">${icon('x')}</button></div></header>
       <div class="launcher" hidden><nav class="entry-nav" aria-label="Открыть поиск с сайта">${sourceIds.map(source => `<button type="button" data-entry="${source}">${escape(sourceNames[source])}</button>`).join('')}</nav><h1 data-entry-title>Home</h1><button type="button" class="launch-search" data-action="open">${icon('search')}Поиск по всему Hyle</button></div>
-      <main class="body"><form class="search-field" role="search" aria-label="Общий поиск Hyle">${icon('search')}<input type="search" aria-label="Поисковый запрос" placeholder="Книга, автор, тема или фраза…" enterkeyhint="search" maxlength="250" autocomplete="off" spellcheck="false"><button type="button" class="quiet icon-button" data-action="clear-query" aria-label="Очистить запрос">${icon('x')}</button><button type="submit" class="submit-query quiet icon-button" aria-label="Найти">${icon('corner-down-left')}</button><button type="button" class="quiet ai-trigger" data-action="ai" aria-label="Спросить ИИ по книгам Хелпера"><img src="${escape(options.logo || './logo.svg')}" alt=""></button></form>
+      <main class="body"><form class="search-field" role="search" aria-label="Общий поиск Hyle">${icon('search')}<input type="search" aria-label="Поисковый запрос" placeholder="Книга, автор, тема или фраза…" enterkeyhint="search" maxlength="250" autocomplete="off" spellcheck="false"><button type="button" class="quiet icon-button" data-action="clear-query" aria-label="Очистить запрос">${icon('x')}</button><button type="submit" class="submit-query quiet icon-button" aria-label="Найти">${icon('corner-down-left')}</button><button type="button" class="quiet ai-trigger" data-action="ai" aria-label="Спросить ИИ по материалам Hyle"><img src="${escape(options.logo || './logo.svg')}" alt=""></button></form>
         <div class="query-note"><span>Все сайты и материалы Hyle</span><span data-entry-note></span></div>
         <div class="tabs-bar"><div class="tabs" role="group" aria-label="Тип материала">${Object.entries(kindNames).map(([key, label]) => `<button type="button" data-type="${key}" aria-pressed="${key === 'all'}">${label}</button>`).join('')}</div><button type="button" class="filter-button" data-action="filters" aria-haspopup="dialog" aria-label="Фильтры">${icon('sliders-horizontal')}<span class="filter-label">Фильтры</span><span class="filter-badge" hidden></span></button></div>
         <div class="active-filters" hidden></div>
@@ -180,7 +186,8 @@ export function mountSearch(root, catalog, engine, options = {}) {
       $('.suggestions').hidden = hasQuery;
       $('.result-meta-bar').hidden = !hasQuery;
       $('.results').hidden = !hasQuery;
-      $('.empty').hidden = !hasQuery || results.length > 0;
+      $('.empty').hidden = !hasQuery || results.length > 0 || catalogLoading;
+      $('.coverage').textContent = `${catalog.filter(doc => doc.kind !== 'site').length} файлов · Home, Хелпер ФФ, Кафедра и НГУ${catalogLoading ? ' · каталоги загружаются…' : ''}. Материалы диплома открываются по паролю.`;
       const incomplete = !options.preview && live.query === state.query && Object.values(live.status).some(status => status === 'loading' || status === 'more' || status === 'partial' || status === 'error');
       $('.result-total').textContent = `${results.length}${incomplete ? '+' : ''} ${plural(results.length)}`;
       const narrow = phone || app.clientWidth > 0 && app.clientWidth <= 620;
@@ -298,7 +305,17 @@ export function mountSearch(root, catalog, engine, options = {}) {
   });
   window.addEventListener('openai:set_globals', event => { if (!interacted) { restore(event.detail?.globals?.widgetState); search(true); } });
   search(true);
-  return { getState: () => ({ ...state }), getSnapshot: () => live, open(query) {
+  return { getState: () => ({ ...state }), getSnapshot: () => live, setCatalog(docs, loading = false) {
+    catalog = docs; catalogLoading = loading;
+    subjects = [...new Set(catalog.map(doc => doc.subject).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ru'));
+    for (const view of views) {
+      const select = view.app.querySelector('[data-field="subject"]'), selected = select.value;
+      select.replaceChildren(new Option('Все предметы',''), ...subjects.map(subject => new Option(subject,subject)));
+      if (selected && !subjects.includes(selected)) select.add(new Option(selected,selected));
+      select.value = selected;
+    }
+    engine.setCatalog(docs); search(true);
+  }, open(query) {
     if(typeof query==='string' && query!==state.query){state.query=query.slice(0,250);search(true);}
     views.find(view=>view.app.offsetParent!==null)?.focus();
   } };

@@ -6,7 +6,7 @@
 import { renderAnswer, sourceLink } from './ai-renderer.js';
 import { consumeSSE } from './ai-sse.js';
 const API = 'https://api.hyle.space';
-const HOLD = 700, OPEN = 850, CLOSE = 420;
+const HOLD = 700, OPEN = 320, CLOSE = 220;
 const KEY = 'hyle.ai.key', STORE = 'hyle.ai.dialogs.v1';
 const still = matchMedia('(prefers-reduced-motion: reduce)');
 const box = document.getElementById('searchbox'), input = document.getElementById('search'), button = document.getElementById('ai-button');
@@ -26,22 +26,27 @@ function init() {
   layer.innerHTML = `
     <div class="ai-veil"></div>
     <section class="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-title">
-      <header class="ai-head">
+      <div class="ai-head-wrap"><div class="ai-head-clip"><header class="ai-head">
         <button class="ai-icon" type="button" data-act="close" aria-label="Назад к поиску"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <div class="ai-title"><strong id="ai-title">Новый вопрос</strong><span id="ai-scope">ИИ по материалам Hyle</span></div>
         <button class="ai-icon" type="button" data-act="list" aria-label="Все диалоги"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/><path d="M12 8v4l3 2"/></svg></button>
         <button class="ai-icon" type="button" data-act="new" aria-label="Новый диалог"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-      </header>
-      <div class="ai-filters" aria-label="Область поиска ИИ">
+      </header></div></div>
+      <button class="ai-head-reveal" type="button" data-act="show-head" aria-label="Показать верхнее меню" hidden>⌄</button>
+      <div class="ai-messages" id="ai-messages" aria-live="polite"></div>
+      <div class="ai-controls">
+      <section class="ai-filters" id="ai-filters" aria-label="Область поиска ИИ" hidden>
+        <div class="ai-filter-head"><strong>Где искать</strong><button type="button" data-act="reset-filters">Сбросить</button><button type="button" data-act="close-filters" aria-label="Закрыть фильтры">Готово</button></div>
         <label>Источник<select id="ai-source"><option value="">Все материалы</option><option value="helper">Хелпер ФФ</option><option value="nsu-y4s1">НГУ · 4 курс, 1 семестр</option><option value="department">Кафедра</option></select></label>
         <label>Семестр<select id="ai-semester"><option value="">Все</option>${Array.from({length:8}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>
         <label>Предмет<input id="ai-subject" placeholder="Все предметы" aria-label="Название предмета"></label>
-      </div>
-      <div class="ai-messages" id="ai-messages" aria-live="polite"></div>
+      </section>
       <form class="ai-compose" id="ai-compose">
-        <textarea id="ai-input" rows="1" placeholder="Спросите о материалах Hyle" aria-label="Вопрос"></textarea>
+        <button class="ai-filter-toggle" type="button" data-act="filters" aria-label="Фильтры поиска" aria-controls="ai-filters" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h2m4 0h10"/><circle cx="14" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span class="ai-filter-count" hidden></span></button>
+        <textarea id="ai-input" rows="1" placeholder="Спросите о материалах Hyle" aria-label="Вопрос" enterkeyhint="send"></textarea>
         <button class="ai-send" type="submit" aria-label="Спросить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
       </form>
+      </div>
       <div class="ai-sheet" id="ai-sheet" hidden>
         <div class="ai-sheet-head"><strong>Диалоги</strong><span>Хранятся только в этом браузере</span></div>
         <div class="ai-sheet-list" id="ai-sheet-list"></div>
@@ -53,11 +58,56 @@ function init() {
   const messages = layer.querySelector('#ai-messages'), compose = layer.querySelector('#ai-compose'), field = layer.querySelector('#ai-input');
   const sheet = layer.querySelector('#ai-sheet'), sheetList = layer.querySelector('#ai-sheet-list');
   const ctx = frameCanvas.getContext('2d');
+  const filters = layer.querySelector('#ai-filters'), filterToggle = layer.querySelector('.ai-filter-toggle');
+  const head = layer.querySelector('.ai-head-wrap'), revealHead = layer.querySelector('.ai-head-reveal');
+  function toggleFilters(open, restoreFocus = false) {
+    filters.hidden = !open;
+    filterToggle.setAttribute('aria-expanded', String(open));
+    if (open) { sheet.hidden = true; filters.querySelector('select').focus({preventScroll:true}); }
+    else if (restoreFocus) filterToggle.focus({preventScroll:true});
+  }
+  let scrollIntent = 0, previousScroll = 0, scrollTravel = 0, headerSettling = 0;
+  function showHead(show) {
+    if (dialog.classList.contains('ai-head-hidden') === !show) return;
+    dialog.classList.toggle('ai-head-hidden', !show); head.inert = !show; revealHead.hidden = show;
+    headerSettling = performance.now() + 230; scrollTravel = 0;
+  }
+  messages.addEventListener('wheel', () => { scrollIntent = performance.now() + 350; }, {passive:true});
+  messages.addEventListener('touchmove', () => { scrollIntent = performance.now() + 900; }, {passive:true});
+  messages.addEventListener('keydown', e => { if (['ArrowDown','ArrowUp','PageDown','PageUp','End','Home'].includes(e.key)) scrollIntent = performance.now() + 350; });
+  messages.addEventListener('scroll', () => {
+    const next = Math.max(0, messages.scrollTop), delta = next - previousScroll; previousScroll = next;
+    if (performance.now() < headerSettling || performance.now() > scrollIntent || !filters.hidden || !sheet.hidden) return;
+    if (next < 24) { showHead(true); return; }
+    scrollTravel = Math.sign(scrollTravel) === Math.sign(delta) ? scrollTravel + delta : delta;
+    if (scrollTravel > 24 && !head.contains(document.activeElement)) showHead(false);
+    else if (scrollTravel < -14) showHead(true);
+  }, {passive:true});
+  // The parent search overlay sizes its iframe to the TOP-LEVEL visual viewport.
+  // Direct site dialogs follow their own viewport, including keyboard resize and pan.
+  let viewportFrame = 0;
+  function syncViewport() {
+    viewportFrame = 0;
+    if (layer.hidden) return;
+    const v = window.visualViewport;
+    const height = v?.height || innerHeight;
+    layer.style.top = (v?.offsetTop || 0) + 'px';
+    layer.style.left = (v?.offsetLeft || 0) + 'px';
+    layer.style.width = (v?.width || innerWidth) + 'px';
+    layer.style.height = height + 'px';
+    layer.style.setProperty('--ai-view-height', height + 'px');
+    layer.classList.toggle('ai-keyboard', innerHeight - height > 120);
+    size();
+  }
+  function queueViewport() { if (!viewportFrame) viewportFrame = requestAnimationFrame(syncViewport); }
+  window.visualViewport?.addEventListener('resize', queueViewport);
+  window.visualViewport?.addEventListener('scroll', queueViewport);
+  addEventListener('resize', queueViewport);
 
   // ---------- the dot frame
   let W = 0, H = 0, dpr = 1;
-  function size() { W = innerWidth; H = innerHeight; dpr = Math.min(2, devicePixelRatio || 1); frameCanvas.width = W * dpr; frameCanvas.height = H * dpr; }
-  function barRect() { const b = box.getBoundingClientRect(), o = 6; return { x: b.left - o, y: b.top - o, w: b.width + 2 * o, h: b.height + 2 * o, r: 15 }; }
+  function size() { W = layer.clientWidth || innerWidth; H = layer.clientHeight || innerHeight; dpr = Math.min(2, devicePixelRatio || 1); frameCanvas.width = W * dpr; frameCanvas.height = H * dpr; }
+  function barRect() { const b = box.getBoundingClientRect(), l = layer.getBoundingClientRect(), o = 6; return { x: b.left - l.left - o, y: b.top - l.top - o, w: b.width + 2 * o, h: b.height + 2 * o, r: 15 }; }
   const screenRect = () => ({ x: 6, y: 6, w: W - 12, h: H - 12, r: Math.min(28, W * .06) });
   const mix = (A, B, u) => ({ x: lerp(A.x, B.x, u), y: lerp(A.y, B.y, u), w: lerp(A.w, B.w, u), h: lerp(A.h, B.h, u), r: lerp(A.r, B.r, u) });
   function point(R, s) {
@@ -121,7 +171,8 @@ function init() {
   function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(loop); } }
   function begin(isAuto) {
     if (state !== 'closed' && state !== 'hold') return;
-    size(); layer.hidden = false; dialog.style.clipPath = 'inset(0 0 100% 0)'; veil.style.opacity = 0;
+    layer.hidden = false; syncViewport(); size(); dialog.style.clipPath = 'inset(0 0 100% 0)'; veil.style.opacity = 0;
+    if (isAuto) { open(); return; }
     if (state === 'closed') { state = 'hold'; progress = 0; }
     auto = isAuto; pressed = !isAuto; downAt = performance.now(); kick();
   }
@@ -137,7 +188,7 @@ function init() {
   }
   function close(fromHistory) {
     if (state !== 'open' && state !== 'opening') return;
-    sheet.hidden = true; abort?.abort(); layer.classList.remove('live');
+    sheet.hidden = true; toggleFilters(false); field.blur(); abort?.abort(); layer.classList.remove('live');
     if (!fromHistory && window.parent !== window) { parent.postMessage({type:'hyle-search-ai-close-request'},location.origin); return; }
     if (!fromHistory && history.state?.hyleAi) { history.back(); return; }
     size();
@@ -159,7 +210,7 @@ function init() {
   addEventListener('pointermove', e => { if (start && state === 'hold' && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 12) release(); }, { passive: true });
   box.addEventListener('contextmenu', e => { if (state === 'hold' || state === 'opening') e.preventDefault(); });
   button?.addEventListener('click', e => { e.preventDefault(); begin(true); });
-  layer.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!sheet.hidden) sheet.hidden = true; else close(); } });
+  layer.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); if (!filters.hidden) toggleFilters(false, true); else if (!sheet.hidden) sheet.hidden = true; else close(); } });
 
   // ---------- dialogs, kept in this browser
   let dialogs = load(STORE, []), currentId = null, abort = null;
@@ -168,7 +219,16 @@ function init() {
   function persist() { dialogs = dialogs.filter(d => d.messages.length).sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 60); save(STORE, dialogs); }
   const sourceFilter = layer.querySelector('#ai-source'), semesterFilter = layer.querySelector('#ai-semester'), subjectFilter = layer.querySelector('#ai-subject');
   function scopeNow() { return { site: sourceFilter.value, semester: semesterFilter.value, subject: subjectFilter.value.trim() }; }
+  function updateFilterBadge() {
+    const scope = scopeNow(), count = [scope.site, scope.semester, scope.subject].filter(Boolean).length;
+    const badge = filterToggle.querySelector('.ai-filter-count'); badge.hidden = !count; badge.textContent = count;
+    filterToggle.classList.toggle('active', !!count);
+    filterToggle.setAttribute('aria-label', count ? `Фильтры поиска: активно ${count}` : 'Фильтры поиска');
+  }
+  filters.addEventListener('input', updateFilterBadge);
+  filters.addEventListener('change', updateFilterBadge);
   function prepare() {
+    showHead(true); toggleFilters(false);
     const scope = window.HyleAIScope?.() || {};
     if (scope.site != null) {
       if (![...sourceFilter.options].some(o => o.value === scope.site)) {
@@ -178,6 +238,7 @@ function init() {
     }
     if (scope.semester != null) semesterFilter.value = scope.semester;
     if (scope.subject != null) subjectFilter.value = scope.subject;
+    updateFilterBadge();
     layer.querySelector('#ai-scope').textContent = 'ИИ · Helper, НГУ и кафедра';
     if (pending || !currentId || !find(currentId)) newDialog(); else renderDialog();
   }
@@ -185,7 +246,7 @@ function init() {
     if (pending) { const q = pending; pending = ''; ask(q); }
     else if (matchMedia('(hover:hover)').matches) field.focus();
   }
-  function newDialog() { currentId = null; layer.querySelector('#ai-title').textContent = 'Новый вопрос'; renderDialog(); }
+  function newDialog() { showHead(true); currentId = null; layer.querySelector('#ai-title').textContent = 'Новый вопрос'; renderDialog(); }
   function renderDialog() {
     const d = find(currentId);
     layer.querySelector('#ai-title').textContent = d?.title || 'Новый вопрос';
@@ -294,19 +355,25 @@ function init() {
   function keepBottom() { if (messages.scrollHeight - messages.scrollTop - messages.clientHeight < 160) messages.scrollTop = messages.scrollHeight; }
 
   compose.addEventListener('submit', e => { e.preventDefault(); if (abort) return; const q = field.value; field.value = ''; grow(); ask(q); });
+  field.addEventListener('focus', () => { toggleFilters(false); queueViewport(); });
   field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); compose.requestSubmit(); } });
   const grow = () => { field.style.height = 'auto'; field.style.height = Math.min(140, field.scrollHeight) + 'px'; };
   field.addEventListener('input', grow);
   layer.addEventListener('click', e => {
     const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'filters') toggleFilters(filters.hidden);
+    if (act === 'close-filters') toggleFilters(false, true);
+    if (act === 'reset-filters') { sourceFilter.value = ''; semesterFilter.value = ''; subjectFilter.value = ''; updateFilterBadge(); }
+    if (act === 'show-head') showHead(true);
     if (act === 'close') close();
     if (act === 'new') { abort?.abort(); newDialog(); field.focus(); }
-    if (act === 'list') { renderSheet(); sheet.hidden = !sheet.hidden; }
+    if (act === 'list') { toggleFilters(false); renderSheet(); sheet.hidden = !sheet.hidden; }
     const pick = e.target.closest('[data-dialog]');
     if (pick) { abort?.abort(); currentId = pick.dataset.dialog; sheet.hidden = true; renderDialog(); }
     const del = e.target.closest('[data-delete]');
     if (del) { dialogs = dialogs.filter(d => d.id !== del.dataset.delete); persist(); if (currentId === del.dataset.delete) newDialog(); renderSheet(); }
     if (e.target === sheet) sheet.hidden = true;
+    if (!filters.hidden && !e.target.closest('.ai-controls')) toggleFilters(false);
   });
   function renderSheet() {
     const when = iso => new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

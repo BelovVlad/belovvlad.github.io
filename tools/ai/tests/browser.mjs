@@ -73,9 +73,11 @@ try {
     assert.equal(await page.locator('.ai-text pre .hljs-built_in').count(),1);
     assert.equal(await page.locator('.ai-text img,.ai-text script,.ai-text [onerror],.ai-text a[href^="javascript:"]').count(),0);
     assert.match(await page.locator('.ai-cite').nth(1).getAttribute('href'),/NSU_FP_Y4_S1.*cell=3/);
+    await page.locator('.ai-filter-toggle').click();
     await page.locator('#ai-source').selectOption('nsu-y4s1');
     await page.locator('#ai-semester').selectOption('7');
     await page.locator('#ai-subject').fill('СВЧ');
+    await page.locator('[data-act="close-filters"]').click();
     await page.locator('#ai-input').fill('Где формула?');
     complete = false;
     await page.locator('.ai-send').click();

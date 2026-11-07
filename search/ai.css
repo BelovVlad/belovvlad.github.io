@@ -1,6 +1,7 @@
 @import url('./ai-katex.css');
 /* Hyle AI dialog (ai.js): a full-screen layer opened by the dot frame from the search bar. */
 .ai-layer{position:fixed;inset:0;z-index:50;pointer-events:none}
+.ai-layer[hidden]{display:none}
 .ai-layer.live{pointer-events:auto}
 .ai-veil{position:absolute;inset:0;background:var(--bg);opacity:0}
 .ai-frame{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -76,3 +77,32 @@ html.ai-open{overflow:hidden}
 .ai-text .hljs-keyword,.ai-text .hljs-built_in{color:var(--accent)}
 .ai-text .hljs-string,.ai-text .hljs-number{color:var(--warm)}.ai-text .hljs-comment{color:var(--muted)}
 @media(max-width:480px){.ai-filters label:first-child{flex-basis:100%}.ai-messages{padding-left:10px;padding-right:10px}.ai-bot{padding:10px}}
+
+/* A single dock follows the visible viewport; only messages scroll. */
+.ai-dialog{box-sizing:border-box;overflow:hidden}
+.ai-head-wrap{display:grid;grid-template-rows:1fr;flex:none;transition:grid-template-rows .18s ease,opacity .18s ease}
+.ai-head-clip{min-height:0;overflow:hidden}
+.ai-head-hidden .ai-head-wrap{grid-template-rows:0fr;opacity:0}
+.ai-head-reveal{position:absolute;top:max(4px,env(safe-area-inset-top));left:calc(50% - 22px);z-index:1;width:44px;height:26px;border:1px solid var(--line);border-radius:0 0 12px 12px;background:var(--panel);color:var(--muted);cursor:pointer}
+.ai-head-reveal[hidden]{display:none}
+.ai-messages{overflow-anchor:none;scrollbar-gutter:stable;touch-action:pan-y}
+.ai-controls{position:relative;flex:none;min-width:0;z-index:1;margin:0 max(12px,calc((100vw - 780px)/2)) 12px}
+.ai-compose{margin:0;padding:6px;gap:5px}
+.ai-compose textarea{font-size:16px;padding:7px 2px}
+.ai-filter-toggle{position:relative;display:grid;place-items:center;flex:none;align-self:flex-end;width:38px;height:36px;padding:7px;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}
+.ai-filter-toggle svg{width:22px;height:22px}
+.ai-filter-toggle:hover,.ai-filter-toggle[aria-expanded=true]{background:var(--line);color:var(--cream)}
+.ai-filter-toggle.active{color:var(--cream)}
+.ai-filter-count{position:absolute;right:-1px;top:0;min-width:13px;height:13px;border-radius:7px;background:var(--accent);color:white;font:10px/13px system-ui;text-align:center}
+.ai-filter-count[hidden]{display:none}
+.ai-filters[hidden]{display:none}
+.ai-filters{position:absolute;bottom:calc(100% + 8px);left:0;right:0;box-sizing:border-box;padding:14px;gap:12px;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 10px 40px #0006;max-height:min(380px,calc(var(--ai-view-height,100dvh) - 130px));overflow-y:auto;overscroll-behavior:contain}
+.ai-filter-head{display:flex;align-items:center;gap:12px;flex-basis:100%;color:var(--cream)}
+.ai-filter-head strong{flex:1;font-size:14px;font-weight:500}
+.ai-filter-head button{border:0;background:none;color:var(--text2);font:inherit;font-size:13px;min-height:32px;padding:4px;cursor:pointer}
+.ai-filters label{font-size:12px}
+.ai-filters input,.ai-filters select{font-size:16px;min-height:42px;background:var(--bg)}
+.ai-filter-toggle:focus-visible,.ai-filter-head button:focus-visible,.ai-head-reveal:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ai-keyboard .ai-controls{margin-bottom:4px}
+@media(max-width:620px){.ai-head{padding:5px 8px}.ai-title strong{font-size:15px}.ai-title span{font-size:11px}.ai-controls{margin:0 8px 8px}.ai-empty{font-size:14px;max-width:34ch}.ai-filters label{flex-basis:calc(50% - 12px)}.ai-filters label:first-of-type{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){.ai-head-wrap{transition:none}}

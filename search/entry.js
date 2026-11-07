@@ -3,27 +3,43 @@ const input=document.getElementById('search');
 if(input) {
   const box=input.closest('.searchbox') || input.parentElement;
   const source=location.pathname.startsWith('/Helper_PF_NSU/')?'helper':location.pathname.startsWith('/Department/')?'department':'home';
-  let frame, overlay, ready=false, opened=false, aiOpen=false, savedFocus, scroll=0, oldOverflow='';
+  let frame, overlay, loading, ready=false, opened=false, aiOpen=false, savedFocus, scroll=0, oldOverflow='', viewportFrame=0;
   const background=new Map();
   let query=input.value;
   let entryDirty=false;
   input.addEventListener('input',()=>{entryDirty=true;});
-  function show(q=entryDirty?input.value:query,fromHistory=false) {
-    entryDirty=false;
-    query=q;
+  function prepare() {
     if(!overlay){
       overlay=document.createElement('div');overlay.setAttribute('role','dialog');overlay.setAttribute('aria-label','Поиск по всему Hyle');overlay.setAttribute('aria-modal','true');
-      overlay.style.cssText='position:fixed;inset:0;z-index:1000;background:#080d12';
-      frame=document.createElement('iframe');frame.title='Общий поиск Hyle';frame.style.cssText='display:block;width:100%;height:100%;border:0;color-scheme:dark';
-      frame.src='/search/?'+new URLSearchParams({q:query,from:source});overlay.append(frame);document.body.append(overlay);
+      overlay.hidden=true;overlay.style.cssText='position:fixed;inset:0;z-index:1000;background:#080d12';
+      loading=document.createElement('div');loading.style.cssText='position:absolute;inset:0;padding:24px;color:#ead4b7;font:16px system-ui';
+      const back=document.createElement('button');back.type='button';back.textContent='← Назад';back.style.cssText='background:none;border:1px solid #25303a;border-radius:10px;color:inherit;padding:10px 16px;cursor:pointer';back.onclick=()=>close();
+      const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Открываю поиск…';loading.append(back,status);
+      frame=document.createElement('iframe');frame.title='Общий поиск Hyle';frame.style.cssText='display:block;visibility:hidden;width:100%;height:100%;border:0;color-scheme:dark';
+      frame.src='/search/?'+new URLSearchParams({from:source});overlay.append(loading,frame);document.body.append(overlay);
     }
+  }
+  function syncViewport() {
+    viewportFrame=0;if(!opened)return;
+    const v=window.visualViewport;
+    overlay.style.top=(v?.offsetTop||0)+'px';overlay.style.left=(v?.offsetLeft||0)+'px';
+    overlay.style.width=(v?.width||innerWidth)+'px';overlay.style.height=(v?.height||innerHeight)+'px';
+  }
+  function queueViewport(){if(!viewportFrame)viewportFrame=requestAnimationFrame(syncViewport);}
+  window.visualViewport?.addEventListener('resize',queueViewport);
+  window.visualViewport?.addEventListener('scroll',queueViewport);
+  window.addEventListener('resize',queueViewport);
+  box.addEventListener('pointerenter',prepare,{once:true});
+  input.addEventListener('focus',prepare,{once:true});
+  function show(q=entryDirty?input.value:query,fromHistory=false) {
+    entryDirty=false;query=q;prepare();
     if(!opened){
       savedFocus=document.activeElement;scroll=scrollY;oldOverflow=document.documentElement.style.overflow;
       for(const el of document.body.children){if(el===overlay)continue;background.set(el,el.inert);el.inert=true;}
       document.documentElement.style.overflow='hidden';
       if(!fromHistory)history.pushState({...history.state,hyleSearchOverlay:true},'');
     }
-    opened=true;overlay.hidden=false;
+    opened=true;overlay.hidden=false;syncViewport();
     if(ready)frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);
     frame.focus();
   }
@@ -38,7 +54,7 @@ if(input) {
     if(event.origin!==location.origin||event.source!==frame?.contentWindow)return;
     if(event.data?.type==='hyle-search-close')close();
     if(event.data?.type==='hyle-search-state')query=String(event.data.query||'');
-    if(event.data?.type==='hyle-search-ready'){ready=true;if(opened)frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);}
+    if(event.data?.type==='hyle-search-ready'){ready=true;loading.hidden=true;frame.style.visibility='visible';if(opened)frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);}
     if(event.data?.type==='hyle-search-ai-open'){
       if(!aiOpen)history.pushState({...history.state,hyleSearchOverlay:true,hyleSearchAi:true},'');
       aiOpen=true;
