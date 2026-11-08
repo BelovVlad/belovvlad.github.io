@@ -1,6 +1,7 @@
 import { SearchEngine } from './engine.js?v=4';
 import { mountSearch } from './ui.js?v=2';
 import { loadCatalog } from './catalog.js?v=4';
+import { installReaderNavigation } from './reader.js?v=1';
 
 const params = new URLSearchParams(location.search);
 const embedded = window.parent !== window;
@@ -13,6 +14,7 @@ try {
     initialQuery: params.get('q') || '', entry:params.get('from') || 'home', embedded,
     onClose:()=>embedded?send('hyle-search-close'):location.assign('/'), onState:state=>send('hyle-search-state',{query:state.query})
   });
+  installReaderNavigation();
   document.querySelector('.search-field').id='searchbox';
   document.querySelector('input[type="search"]').id='search';
   document.querySelector('[data-action="ai"]').id='ai-button';
