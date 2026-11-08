@@ -86,7 +86,7 @@ let siteQuery = '', siteTimer, scope = 'all', resourceHits = 0;
 const siteResults = new Map(), facetChoices = {};
 const searching = () => query.trim().length >= 2 && siteSources.length > 0;
 function siteHitHtml(g, stems) {
-  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs(g.url)}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
+  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs(g.url)}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs(h.url)}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
 }
 function facetsHtml(source, groups) {
   const choices = facetChoices[source.id] ||= {};
