@@ -60,16 +60,21 @@ export function installReaderNavigation() {
     activeUrl = url.href;
     overlay.hidden = false;
     document.documentElement.style.overflow = 'hidden';
+    // PDF.js already has its own back arrow and scroll-aware toolbar.
+    // Do not add an overlapping search button or enable its reduced embed chrome.
+    const isPdf = url.pathname.includes('/pdfjs/viewer.html');
+    overlay.classList.toggle('hyle-reader-pdf', isPdf);
     original.href = url.href;
     frame = document.createElement('iframe');
     frame.className = 'hyle-reader-frame';
     frame.title = 'Документ: ' + (url.searchParams.get('title') || 'Hyle');
     frame.setAttribute('allowfullscreen', '');
     frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-    if (url.pathname.includes('/pdfjs/')) url.searchParams.set('embed', '1');
+    // Normal PDF reader mode restores its existing arrow and auto-hide-on-scroll behavior.
+    if (isPdf) url.searchParams.delete('embed');
     frame.src = url.href;
     overlay.prepend(frame);
-    back.focus({ preventScroll: true });
+    if (!isPdf) back.focus({ preventScroll: true });
   }
 
   function hide() {
