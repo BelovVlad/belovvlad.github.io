@@ -48,7 +48,7 @@ export function createSearchTransition({ box, input, getOverlay, getFrame }) {
     element.style.height = rect.height + 'px';
   }
 
-  function makeGhost(rect, value, large = false) {
+  function makeGhost(rect, value) {
     const overlay = getOverlay();
     ghost = box.cloneNode(true);
     ghost.setAttribute('data-hyle-transition', '');
@@ -63,12 +63,7 @@ export function createSearchTransition({ box, input, getOverlay, getFrame }) {
     ghost.style.cssText = 'position:absolute;z-index:10;pointer-events:none;box-sizing:border-box;margin:0;min-width:0;max-width:none;transform:none;';
     position(ghost, rect);
     const field = ghost.querySelector('input');
-    if (field) {
-      field.value = value;
-      field.style.fontSize = large ? '21px' : '14px';
-    }
-    const kbd = ghost.querySelector('kbd');
-    if (kbd) kbd.style.opacity = large ? '0' : '1';
+    if (field) field.value = value;
     overlay.append(ghost);
     return ghost;
   }
@@ -78,21 +73,21 @@ export function createSearchTransition({ box, input, getOverlay, getFrame }) {
     return animation;
   }
 
-  function move(from, to, backwards) {
+  // Translate the bar without scaling its dimensions or font size.
+  // If the two page layouts differ slightly, align by the centre instead.
+  function move(from, to) {
+    const width = ghost.getBoundingClientRect().width;
+    const height = ghost.getBoundingClientRect().height;
+    const centred = rect => ({
+      left: rect.left + (rect.width - width) / 2,
+      top: rect.top + (rect.height - height) / 2
+    });
+    const start = centred(from);
+    const end = centred(to);
     const animation = track(ghost.animate([
-      { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px' },
-      { left: to.left + 'px', top: to.top + 'px', width: to.width + 'px', height: to.height + 'px' }
+      { left: start.left + 'px', top: start.top + 'px' },
+      { left: end.left + 'px', top: end.top + 'px' }
     ], { duration: DURATION, easing: EASING, fill: 'forwards' }));
-    const field = ghost.querySelector('input');
-    if (field) track(field.animate([
-      { fontSize: backwards ? '21px' : '14px' },
-      { fontSize: backwards ? '14px' : '21px' }
-    ], { duration: DURATION, easing: EASING, fill: 'forwards' }));
-    const kbd = ghost.querySelector('kbd');
-    if (kbd) track(kbd.animate([
-      { opacity: backwards ? 0 : 1 },
-      { opacity: backwards ? 1 : 0 }
-    ], { duration: DURATION * .8, easing: 'ease', fill: 'forwards' }));
     return animation.finished.catch(() => {});
   }
 
@@ -119,7 +114,7 @@ export function createSearchTransition({ box, input, getOverlay, getFrame }) {
     const from = sourceRect();
     frame.style.visibility = 'visible';
     frame.style.opacity = '0';
-    const moving = move(from, to, false);
+    const moving = move(from, to);
     track(frame.animate([
       { opacity: 0, offset: 0 }, { opacity: 0, offset: .55 }, { opacity: 1, offset: 1 }
     ], { duration: DURATION, easing: 'linear', fill: 'forwards' }));
@@ -143,8 +138,10 @@ export function createSearchTransition({ box, input, getOverlay, getFrame }) {
       done();
       return;
     }
-    makeGhost(from, value, true);
-    const moving = move(from, to, true);
+    makeGhost(to, value);
+    // Keep the cloned Home bar at its original size even on the return trip.
+    position(ghost, { ...from, width: to.width, height: to.height });
+    const moving = move(from, to);
     track(frame.animate([
       { opacity: 1, offset: 0 }, { opacity: 0, offset: .4 }, { opacity: 0, offset: 1 }
     ], { duration: DURATION, easing: 'linear', fill: 'forwards' }));
