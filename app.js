@@ -51,8 +51,10 @@ function save(message) {
 // so they open in its own window; a new tab would leave the app for the browser.
 const installedApp = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
 function targetAttrs(url) {
-  const inApp = installedApp() && url && new URL(url, location.href).origin === location.origin;
-  return config.settings.newTab && !inApp ? 'target="_blank" rel="noopener"' : '';
+  // Keep all same-origin Hyle links in the current tab, including on Android.
+  // A new tab loses the search/navigation history in browsers and installed PWAs.
+  const internal = url && new URL(url, location.href).origin === location.origin;
+  return config.settings.newTab && !internal ? 'target="_blank" rel="noopener"' : '';
 }
 function categoryName(id) { return config.categories.find(c => c.id === id)?.name || ''; }
 // The section tabs are the heading of the library: name, number of cards, a red line under the chosen one.
