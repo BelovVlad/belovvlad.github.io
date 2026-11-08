@@ -1,5 +1,5 @@
 // A shared search surface; existing site navigation, catalog and AI entry stay intact.
-import { createSearchTransition } from '/search/transition.js';
+import { createSearchTransition } from '/search/transition.js?v=3';
 const input=document.getElementById('search');
 if(input) {
   const box=input.closest('.searchbox') || input.parentElement;
@@ -18,7 +18,7 @@ if(input) {
       const back=document.createElement('button');back.type='button';back.textContent='← Назад';back.style.cssText='background:none;border:1px solid #25303a;border-radius:10px;color:inherit;padding:10px 16px;cursor:pointer';back.onclick=()=>close();
       const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Открываю поиск…';loading.append(back,status);
       frame=document.createElement('iframe');frame.title='Общий поиск Hyle';frame.style.cssText='display:block;visibility:hidden;width:100%;height:100%;border:0;color-scheme:dark';
-      frame.src='/search/?'+new URLSearchParams({from:source,ui:'2'});overlay.append(loading,frame);document.body.append(overlay);
+      frame.src='/search/?'+new URLSearchParams({from:source,ui:'3'});overlay.append(loading,frame);document.body.append(overlay);
     }
   }
   function syncViewport() {
@@ -33,6 +33,13 @@ if(input) {
   window.addEventListener('resize',queueViewport);
   box.addEventListener('pointerenter',prepare,{once:true});
   input.addEventListener('focus',prepare,{once:true});
+  // On touch screens, open the search before focusing Home's input to avoid
+  // a premature mobile keyboard and a jump in visualViewport during the morph.
+  input.addEventListener('pointerdown',event=>{
+    if(event.pointerType!=='touch'||opened)return;
+    event.preventDefault();
+    show();
+  });
   function show(q=entryDirty?input.value:query,fromHistory=false) {
     entryDirty=false;query=q;prepare();
     const firstOpen=!opened;
