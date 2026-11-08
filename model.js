@@ -1,4 +1,4 @@
-import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, HELPER_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN } from './config.js';
+import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, HELPER_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN, ORG_PAGES } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -69,6 +69,15 @@ export function migrateConfig(config) {
     // Next to the NSU card's section if it was moved; Education by default, the first section otherwise.
     const home = [resources.find(r => r.id === 'nsu-s1')?.category, HELPER_RESOURCE.category].find(id => categories.some(c => c.id === id)) ?? categories[0]?.id;
     if (home) resources.push({...HELPER_RESOURCE,category:home});
+  }
+  if (config.revision < 12) {
+    // GitHub does not redirect Pages URLs after a repository ownership transfer.
+    // Rewrite only former Hyle project-site paths, including saved deep links.
+    const moved = /^(https:\/\/(?:hyle\.space|belovvlad\.github\.io)\/)(NSU_FP_Y4_S1|Department|Helper_PF_NSU|diploma)(\/|$)/;
+    resources = resources.map(r => {
+      const match = r.url.match(moved);
+      return match ? {...r,url:ORG_PAGES+r.url.slice(match[1].length)} : r;
+    });
   }
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }

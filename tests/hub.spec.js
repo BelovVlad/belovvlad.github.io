@@ -32,9 +32,9 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   await expect(libraryCard(page,'nsu-s1').locator('a')).toHaveAttribute('href',defaults.resources[0].url);
   await expect(libraryCard(page,'nsu-s2').locator('a')).toHaveCount(0);
-  await page.route('https://hyle.space/Helper_PF_NSU/materials.json',route=>route.fulfill({json:{files:[]}}));
-  await page.route('https://hyle.space/Department/viewer/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
-  await page.route('https://hyle.space/NSU_FP_Y4_S1/docs/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle-space.github.io/Helper_PF_NSU/materials.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle-space.github.io/Department/viewer/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle-space.github.io/NSU_FP_Y4_S1/docs/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
   await page.keyboard.press('Control+k');
   const sharedSearch=page.frameLocator('iframe[title="Общий поиск Hyle"]');
   await expect(sharedSearch.locator('input[type="search"]')).toBeFocused();
@@ -94,6 +94,19 @@ for (const width of [320, 375, 430, 600]) test(`mobile search keeps Home bar dim
   await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
 });
 
+test('desktop search bar fills the result column without resizing on open',async ({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  const start=await page.locator('.topbar .searchbox').boundingBox();
+  expect(start.width).toBeGreaterThan(780);
+  await page.locator('#search').click();
+  const frame=page.frameLocator('iframe[title="Общий поиск Hyle"]');
+  await expect(frame.locator('.search-field')).toBeVisible();
+  const end=await frame.locator('.search-field').boundingBox();
+  expect(Math.abs(start.width-end.width)).toBeLessThanOrEqual(2);
+  await frame.getByRole('button',{name:'Hyle — вернуться на главную',exact:true}).click();
+  await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
+});
+
 test('content search in other sites degrades to a link when they are unreachable',async ({page}) => {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/NSU_FP_Y4_S1/**',route=>route.fulfill({status:404,body:'Not found'}));
@@ -102,8 +115,8 @@ test('content search in other sites degrades to a link when they are unreachable
   await page.locator('#search').fill('ф');await expect(page.locator('#site-results')).toBeHidden();
   await page.locator('#search').fill('десятичной');
   await expect(page.locator('#site-results')).toContainText('Поиск по тексту сейчас недоступен');
-  await expect(page.locator('#site-results [data-source="nsu-s1"] .site-source-all')).toHaveAttribute('href','/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
-  await expect(page.locator('#site-results [data-source="department"] .site-source-all')).toHaveAttribute('href','/Department/');
+  await expect(page.locator('#site-results [data-source="nsu-s1"] .site-source-all')).toHaveAttribute('href','https://hyle-space.github.io/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
+  await expect(page.locator('#site-results [data-source="department"] .site-source-all')).toHaveAttribute('href','https://hyle-space.github.io/Department/');
   await page.locator('#search').fill('');await expect(page.locator('#site-results')).toBeHidden();
   expect(errors).toEqual([]);
 });
@@ -111,7 +124,7 @@ test('content search in other sites degrades to a link when they are unreachable
 // Each site answers with a fake search worker: every listed file matches on page 3.
 async function fakeSite(page,prefix,files){
   await page.route(`**${prefix}search-index/files.json`,route=>route.fulfill({json:{files}}));
-  await page.route(`**${prefix}search-worker.js`,route=>route.fulfill({contentType:'text/javascript',body:`let files=[];onmessage=e=>{const d=e.data;
+  await page.route('**/search/search-worker.js',route=>route.fulfill({contentType:'text/javascript',body:`let files=[];onmessage=e=>{const d=e.data;
     if(d.type==='init')files=d.files;
     else if(d.type==='search')postMessage({id:d.id,type:'results',partial:false,stems:[d.query],groups:files.map(f=>({path:f.path,hits:[{page:3,snippet:'про '+d.query}]}))});};`}));
 }
@@ -130,9 +143,9 @@ test('content search chooses a site and narrows it by the filters of that site',
   await expect(sections).toContainText('Семинары');await expect(sections).toContainText('Справочники');
   await sections.locator('[data-value="Семинары"]').click();
   await expect(page.locator('#site-results .site-hit')).toHaveCount(1);
-  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^\/NSU_FP_Y4_S1\/docs\/pdfjs\/viewer\.html\?file=.*page=3/);
+  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^https:\/\/hyle-space\.github\.io\/NSU_FP_Y4_S1\/docs\/pdfjs\/viewer\.html\?file=.*page=3/);
   await scope.locator('[data-scope="department"]').click();
-  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^\/Department\/viewer\/pdfjs\/viewer\.html\?file=files%2F/);
+  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^https:\/\/hyle-space\.github\.io\/Department\/viewer\/pdfjs\/viewer\.html\?file=files%2F/);
   await scope.locator('[data-scope="resources"]').click();
   await expect(page.locator('#site-results')).toBeHidden();await expect(page.locator('#resources')).toBeVisible();
   await page.locator('#search').fill('');await expect(scope).toBeHidden();await expect(page.locator('#site-results')).toBeHidden();

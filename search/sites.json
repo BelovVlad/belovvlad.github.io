@@ -17,7 +17,7 @@
   {
     "site": "helper",
     "title": "Хелпер ФФ",
-    "url": "https://hyle.space/Helper_PF_NSU/",
+    "url": "https://hyle-space.github.io/Helper_PF_NSU/",
     "subject": "Литература",
     "description": "Книги физического факультета по семестрам и предметам",
     "id": "helper:site",
@@ -32,7 +32,7 @@
   {
     "site": "department",
     "title": "Курсы кафедры",
-    "url": "https://hyle.space/Department/",
+    "url": "https://hyle-space.github.io/Department/",
     "subject": "Кафедра",
     "description": "Электронная оптика, физика пучков и циклические ускорители",
     "id": "department:site",
@@ -47,7 +47,7 @@
   {
     "site": "nsu",
     "title": "НГУ · 4 курс, 1 семестр",
-    "url": "https://hyle.space/NSU_FP_Y4_S1/docs/",
+    "url": "https://hyle-space.github.io/NSU_FP_Y4_S1/docs/",
     "subject": "Учебные материалы",
     "description": "Лекции, семинары, задачи, лабораторные, код и литература",
     "id": "nsu:site",
@@ -62,7 +62,7 @@
   {
     "site": "diploma",
     "title": "Материалы диплома",
-    "url": "https://hyle.space/diploma/",
+    "url": "https://hyle-space.github.io/diploma/",
     "subject": "Диплом",
     "description": "Литература, отчёт и разработка. Вход по паролю",
     "locked": true,

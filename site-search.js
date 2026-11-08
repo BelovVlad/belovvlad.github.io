@@ -1,5 +1,5 @@
-// Full-text search in the other Hyle sites. They share this origin, so the hub runs each
-// site's own search worker over its own index and links straight into its reader.
+// Full-text search in other Hyle sites. Their GitHub Pages moved to Hyle-space;
+// use a same-origin worker that fetches remote page indices over CORS.
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 // The NSU site names subjects and sections by the path (site.js subjectOf/sectionOf);
@@ -33,8 +33,9 @@ export function materialsSource({ id, name, label, base, home, searchHash = fals
   }
   function ensureWorker() {
     workerPromise ||= files().then(list => {
-      const worker = new Worker(base + 'search-worker.js', { type:'module' });
-      worker.postMessage({ type:'init', files:list });
+      // Workers must be same-origin; the shared worker fetches index shards from the site base.
+      const worker = new Worker('/search/search-worker.js', { type:'module' });
+      worker.postMessage({ type:'init', base, files:list });
       worker.onmessage = event => {
         const data = event.data;
         if (data.type !== 'results' || data.partial || data.id !== run || !pending) return;
