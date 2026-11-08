@@ -32,9 +32,9 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   await expect(libraryCard(page,'nsu-s1').locator('a')).toHaveAttribute('href',defaults.resources[0].url);
   await expect(libraryCard(page,'nsu-s2').locator('a')).toHaveCount(0);
-  await page.route('https://hyle-space.github.io/Helper_PF_NSU/materials.json',route=>route.fulfill({json:{files:[]}}));
-  await page.route('https://hyle-space.github.io/Department/viewer/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
-  await page.route('https://hyle-space.github.io/NSU_FP_Y4_S1/docs/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle.space/Helper_PF_NSU/materials.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle.space/Department/viewer/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
+  await page.route('https://hyle.space/NSU_FP_Y4_S1/docs/search-index/files.json',route=>route.fulfill({json:{files:[]}}));
   await page.keyboard.press('Control+k');
   const sharedSearch=page.frameLocator('iframe[title="Общий поиск Hyle"]');
   await expect(sharedSearch.locator('input[type="search"]')).toBeFocused();
@@ -115,8 +115,8 @@ test('content search in other sites degrades to a link when they are unreachable
   await page.locator('#search').fill('ф');await expect(page.locator('#site-results')).toBeHidden();
   await page.locator('#search').fill('десятичной');
   await expect(page.locator('#site-results')).toContainText('Поиск по тексту сейчас недоступен');
-  await expect(page.locator('#site-results [data-source="nsu-s1"] .site-source-all')).toHaveAttribute('href','https://hyle-space.github.io/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
-  await expect(page.locator('#site-results [data-source="department"] .site-source-all')).toHaveAttribute('href','https://hyle-space.github.io/Department/');
+  await expect(page.locator('#site-results [data-source="nsu-s1"] .site-source-all')).toHaveAttribute('href','https://hyle.space/NSU_FP_Y4_S1/docs/#search='+encodeURIComponent('десятичной'));
+  await expect(page.locator('#site-results [data-source="department"] .site-source-all')).toHaveAttribute('href','https://hyle.space/Department/');
   await page.locator('#search').fill('');await expect(page.locator('#site-results')).toBeHidden();
   expect(errors).toEqual([]);
 });
