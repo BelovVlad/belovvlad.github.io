@@ -100,7 +100,7 @@ export function mountSearch(root, catalog, engine, options = {}) {
     app.dataset.mode = phone ? 'phone' : 'desktop';
     app.setAttribute('aria-label', phone ? 'Поиск Hyle на телефоне' : 'Поиск Hyle на компьютере');
     section.append(app);
-    app.innerHTML = `<header class="topbar"><div class="brand"><img src="${escape(options.logo || './logo.svg')}" alt=""><span>Hyle</span><small>Поиск</small></div><div class="top-actions"><button type="button" class="quiet icon-button" data-action="close" aria-label="Закрыть поиск">${icon('x')}</button></div></header>
+    app.innerHTML = `<header class="topbar"><button type="button" class="brand quiet" data-action="close" aria-label="Hyle — вернуться на главную"><img src="${escape(options.logo || './logo.svg')}" alt=""><span>Hyle</span><small>Поиск</small></button></header>
       <div class="launcher" hidden><nav class="entry-nav" aria-label="Открыть поиск с сайта">${sourceIds.map(source => `<button type="button" data-entry="${source}">${escape(sourceNames[source])}</button>`).join('')}</nav><h1 data-entry-title>Home</h1><button type="button" class="launch-search" data-action="open">${icon('search')}Поиск по всему Hyle</button></div>
       <main class="body"><form class="search-field" role="search" aria-label="Общий поиск Hyle">${icon('search')}<input type="search" aria-label="Поисковый запрос" placeholder="Книга, автор, тема или фраза…" enterkeyhint="search" maxlength="250" autocomplete="off" spellcheck="false"><button type="button" class="quiet icon-button" data-action="clear-query" aria-label="Очистить запрос">${icon('x')}</button><button type="submit" class="submit-query quiet icon-button" aria-label="Найти">${icon('corner-down-left')}</button><button type="button" class="quiet ai-trigger" data-action="ai" aria-label="Спросить ИИ по материалам Hyle"><img src="${escape(options.logo || './logo.svg')}" alt=""></button></form>
         <div class="query-note"><span>Все сайты и материалы Hyle</span><span data-entry-note></span></div>
@@ -167,7 +167,6 @@ export function mountSearch(root, catalog, engine, options = {}) {
       if (input.value !== state.query) input.value = state.query;
       body.hidden = state.closed;
       $('.launcher').hidden = !state.closed;
-      $('[data-action="close"]').hidden = state.closed;
       $('[data-entry-title]').textContent = sourceNames[state.entry];
       $('[data-entry-note]').textContent = sourceNames[state.entry];
       for (const button of app.querySelectorAll('[data-entry]')) button.setAttribute('aria-pressed', button.dataset.entry === state.entry);
