@@ -143,9 +143,9 @@ test('content search chooses a site and narrows it by the filters of that site',
   await expect(sections).toContainText('Семинары');await expect(sections).toContainText('Справочники');
   await sections.locator('[data-value="Семинары"]').click();
   await expect(page.locator('#site-results .site-hit')).toHaveCount(1);
-  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^https:\/\/hyle-space\.github\.io\/NSU_FP_Y4_S1\/docs\/pdfjs\/viewer\.html\?file=.*page=3/);
+  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^https:\/\/hyle\.space\/NSU_FP_Y4_S1\/docs\/pdfjs\/viewer\.html\?file=.*page=3/);
   await scope.locator('[data-scope="department"]').click();
-  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^https:\/\/hyle-space\.github\.io\/Department\/viewer\/pdfjs\/viewer\.html\?file=files%2F/);
+  await expect(page.locator('#site-results .site-hit-main')).toHaveAttribute('href',/^https:\/\/hyle\.space\/Department\/viewer\/pdfjs\/viewer\.html\?file=files%2F/);
   await scope.locator('[data-scope="resources"]').click();
   await expect(page.locator('#site-results')).toBeHidden();await expect(page.locator('#resources')).toBeVisible();
   await page.locator('#search').fill('');await expect(scope).toBeHidden();await expect(page.locator('#site-results')).toBeHidden();
