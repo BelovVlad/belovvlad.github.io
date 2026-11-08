@@ -1,4 +1,5 @@
 import { normalizeText, searchTerms } from './search-text.js';
+import { ORG_PAGES } from '../config.js';
 
 export const sourceNames = { home: 'Home', helper: 'Хелпер ФФ', department: 'Кафедра', nsu: 'НГУ · Y4 S1', diploma: 'Диплом' };
 export const kindNames = { all: 'Всё', book: 'Книги', notes: 'Конспекты', code: 'Код', site: 'Сайты' };
@@ -27,8 +28,8 @@ export function shortExcerpt(text, query) {
 
 export function documentUrl(doc, page = 0, query = '') {
   if (doc.url) return doc.url;
-  if (doc.site === 'nsu' && doc.path === 'База/Частицы.ipynb') return 'https://hyle.space/NSU_FP_Y4_S1/docs/particles/';
-  const bases = { helper: 'Helper_PF_NSU/viewer/', department: 'Department/viewer/', nsu: 'NSU_FP_Y4_S1/docs/' };
+  if (doc.site === 'nsu' && doc.path === 'База/Частицы.ipynb') return ORG_PAGES + 'NSU_FP_Y4_S1/docs/particles/';
+  const bases = { helper: ORG_PAGES + 'Helper_PF_NSU/viewer/', department: ORG_PAGES + 'Department/viewer/', nsu: ORG_PAGES + 'NSU_FP_Y4_S1/docs/' };
   const reader = doc.ext === 'pdf' ? 'pdfjs/viewer.html' : doc.ext === 'ipynb' ? 'notebook/viewer.html' : 'notebook/code.html';
   const url = new URL(bases[doc.site] + reader, 'https://hyle.space/');
   const params = new URLSearchParams({ file: doc.file || doc.path, title: doc.title, subject: doc.subject || '' });
@@ -96,7 +97,7 @@ export class SearchEngine {
   worker(site) {
     if (this.workers.has(site)) return this.workers.get(site);
     const worker = new Worker('./search-worker.js', { type: 'module' });
-    const base = site === 'department' ? 'https://hyle.space/Department/viewer/' : 'https://hyle.space/NSU_FP_Y4_S1/docs/';
+    const base = site === 'department' ? ORG_PAGES + 'Department/viewer/' : ORG_PAGES + 'NSU_FP_Y4_S1/docs/';
     worker.postMessage({ type: 'init', base, files: this.catalog.filter(doc => doc.site === site && doc.kind !== 'site').map(doc => ({
       path: doc.path, title: doc.title, subject: doc.subject, section: doc.section, ext: '.' + doc.ext, description: ''
     })) });
