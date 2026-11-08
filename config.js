@@ -1,7 +1,8 @@
-export const CURRENT_REVISION = 12;
-// Home stays on hyle.space. Project Pages moved with the repositories to the Hyle-space organization.
+export const CURRENT_REVISION = 13;
+// Once Home is the Hyle-space organization Pages root, all its project sites inherit hyle.space.
 export const ORIGIN = 'https://hyle.space/';
-export const ORG_PAGES = 'https://hyle-space.github.io/';
+export const LEGACY_ORG_PAGES = 'https://hyle-space.github.io/';
+export const ORG_PAGES = ORIGIN;
 // Revision 10: cards saved with the former github.io address move to the domain.
 export const FORMER_ORIGIN = 'https://belovvlad.github.io/';
 // The Diploma site is its own repository: only encrypted files, opened with a password on every entry.

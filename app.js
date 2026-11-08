@@ -51,8 +51,10 @@ function save(message) {
 // so they open in its own window; a new tab would leave the app for the browser.
 const installedApp = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
 function targetAttrs(url) {
-  const inApp = installedApp() && url && new URL(url, location.href).origin === location.origin;
-  return config.settings.newTab && !inApp ? 'target="_blank" rel="noopener"' : '';
+  // Keep all same-origin Hyle links in the current tab, including on Android.
+  // A new tab loses the search/navigation history in browsers and installed PWAs.
+  const internal = url && new URL(url, location.href).origin === location.origin;
+  return config.settings.newTab && !internal ? 'target="_blank" rel="noopener"' : '';
 }
 function categoryName(id) { return config.categories.find(c => c.id === id)?.name || ''; }
 // The section tabs are the heading of the library: name, number of cards, a red line under the chosen one.
@@ -84,7 +86,7 @@ let siteQuery = '', siteTimer, scope = 'all', resourceHits = 0;
 const siteResults = new Map(), facetChoices = {};
 const searching = () => query.trim().length >= 2 && siteSources.length > 0;
 function siteHitHtml(g, stems) {
-  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs(g.url)}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs()}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
+  return `<article class="site-hit"><a class="site-hit-main" href="${escape(g.url)}" ${targetAttrs(g.url)}><div class="site-hit-top">${g.badge ? `<span class="site-hit-badge">${escape(g.badge)}</span>` : ''}<span class="site-hit-title">${highlight(g.title, stems)}</span><span class="site-hit-count">${g.hits.length} совп.</span></div>${g.meta ? `<div class="site-hit-meta">${escape(g.meta)}</div>` : ''}${g.snippet ? `<div class="site-hit-snippet">${highlight(g.snippet, stems)}</div>` : ''}</a><div class="site-hit-pages">${g.hits.slice(0, 8).map(h => `<a href="${escape(h.url)}" ${targetAttrs(h.url)}>${escape(h.label)}</a>`).join('')}${g.hits.length > 8 ? `<span>+${g.hits.length - 8}</span>` : ''}</div></article>`;
 }
 function facetsHtml(source, groups) {
   const choices = facetChoices[source.id] ||= {};

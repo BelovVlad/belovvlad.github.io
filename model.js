@@ -1,4 +1,4 @@
-import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, HELPER_RESOURCE, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN, ORG_PAGES } from './config.js';
+import { CATEGORY_RENAMES, CURRENT_REVISION, DEPARTMENT_RESOURCE, HELPER_RESOURCE, LEGACY_ORG_PAGES, DRAFT_TEXT, DIPLOMA_CATEGORY, DIPLOMA_MOVED, DIPLOMA_OLD_TEXT, DIPLOMA_CLOUDFLARE, DIPLOMA_PUBLIC_COPY, DIPLOMA_RESOURCES, DIPLOMA_RETIRED, DIPLOMA_URL, FORMER_ORIGIN, ORIGIN, ORG_PAGES } from './config.js';
 export const STORAGE_KEY = 'pweb.home.v1';
 export const ICONS = ['book', 'code', 'tool', 'link', 'user', 'pen', 'github', 'globe', 'folder', 'star'];
 export const clone = value => JSON.parse(JSON.stringify(value));
@@ -78,6 +78,12 @@ export function migrateConfig(config) {
       const match = r.url.match(moved);
       return match ? {...r,url:ORG_PAGES+r.url.slice(match[1].length)} : r;
     });
+  }
+  if (config.revision < 13) {
+    // The organization Pages root now owns hyle.space. Restore saved project links
+    // without altering arbitrary external websites or user-defined categories.
+    resources = resources.map(r => r.url.startsWith(LEGACY_ORG_PAGES)
+      ? {...r,url:ORIGIN + r.url.slice(LEGACY_ORG_PAGES.length)} : r);
   }
   return { ...config, revision:CURRENT_REVISION, categories, resources };
 }

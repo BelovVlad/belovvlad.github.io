@@ -138,12 +138,12 @@ test('revision 9 cards move from the github.io address to the domain and keep ot
   old.resources.push({id:'mine',title:'Мой конспект',description:'',url:'https://belovvlad.github.io/NSU_FP_Y4_S1/docs/#search=спин',category:'education',icon:'book',favorite:false});
   const next=migrateConfig(validateConfig(old));
   assert.equal(next.revision,CURRENT_REVISION);
-  assert.equal(next.resources.find(r=>r.id==='mine').url,'https://hyle-space.github.io/NSU_FP_Y4_S1/docs/#search=спин');
+  assert.equal(next.resources.find(r=>r.id==='mine').url,'https://hyle.space/NSU_FP_Y4_S1/docs/#search=спин');
   assert.equal(next.resources.find(r=>r.id==='github').url,'https://github.com/BelovVlad');
   assert.deepEqual(next.resources.map(r=>r.url).filter(url=>url.includes('belovvlad.github.io')),[]);
 });
 
-test('revision 11 updates former project Pages links without changing custom links',()=>{
+test('revision 11 migrations ultimately restore domain links without changing custom links',()=>{
   const old=clone(defaults);old.revision=11;
   const pages = [
     ['nsu-s1','https://hyle.space/NSU_FP_Y4_S1/'],
@@ -156,9 +156,23 @@ test('revision 11 updates former project Pages links without changing custom lin
   old.resources.push({id:'custom',title:'Другой сайт',url:'https://example.com/NSU_FP_Y4_S1/',category:'links',description:'',icon:'link',favorite:false});
   const next=migrateConfig(validateConfig(old));
   assert.equal(next.revision,CURRENT_REVISION);
-  for(const [id,url] of pages)assert.equal(next.resources.find(r=>r.id===id).url,url.replace('https://hyle.space/','https://hyle-space.github.io/'));
-  assert.equal(next.resources.find(r=>r.id==='deep').url,'https://hyle-space.github.io/NSU_FP_Y4_S1/docs/#search=спин');
+  for(const [id,url] of pages)assert.equal(next.resources.find(r=>r.id===id).url,url);
+  assert.equal(next.resources.find(r=>r.id==='deep').url,'https://hyle.space/NSU_FP_Y4_S1/docs/#search=спин');
   assert.equal(next.resources.find(r=>r.id==='custom').url,'https://example.com/NSU_FP_Y4_S1/');
+});
+
+
+test('revision 12 restores previously saved org Pages links and leaves unrelated URLs intact',()=>{
+  const old=clone(defaults);old.revision=12;
+  old.resources.find(r=>r.id==='nsu-s1').url='https://hyle-space.github.io/NSU_FP_Y4_S1/';
+  old.resources.push({id:'deep-org',title:'Лекция',description:'',url:'https://hyle-space.github.io/Helper_PF_NSU/viewer/pdfjs/viewer.html?file=files%2Fx.pdf&page=2',category:'links',icon:'link',favorite:false});
+  old.resources.push({id:'external-org',title:'Свой сайт',description:'',url:'https://example.com/',category:'links',icon:'link',favorite:false});
+  const next=migrateConfig(validateConfig(old));
+  assert.equal(next.revision,CURRENT_REVISION);
+  assert.equal(next.resources.find(r=>r.id==='nsu-s1').url,'https://hyle.space/NSU_FP_Y4_S1/');
+  assert.equal(next.resources.find(r=>r.id==='deep-org').url,'https://hyle.space/Helper_PF_NSU/viewer/pdfjs/viewer.html?file=files%2Fx.pdf&page=2');
+  assert.equal(next.resources.find(r=>r.id==='external-org').url,'https://example.com/');
+  assert.equal(migrateConfig(next),next);
 });
 
 test('a monogram of up to three characters survives validation',()=>{
