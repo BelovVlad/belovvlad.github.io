@@ -1,0 +1,70 @@
+name: Verify Hyle public websites
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/public-sites-health.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Check HTML pages and JSON catalogs at their published URLs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import sys
+          import time
+          from urllib.error import HTTPError, URLError
+          from urllib.request import Request, urlopen
+
+          pages = {
+              "Home": "https://hyle.space/",
+              "Helper": "https://hyle-space.github.io/Helper_PF_NSU/",
+              "Department": "https://hyle-space.github.io/Department/",
+              "NSU": "https://hyle-space.github.io/NSU_FP_Y4_S1/docs/",
+              "Diploma (encrypted landing page)": "https://hyle-space.github.io/diploma/",
+          }
+          catalogs = {
+              "Home sources": "https://hyle.space/search/sites.json",
+              "Helper materials": "https://hyle-space.github.io/Helper_PF_NSU/materials.json",
+              "Department index": "https://hyle-space.github.io/Department/viewer/search-index/files.json",
+              "NSU index": "https://hyle-space.github.io/NSU_FP_Y4_S1/docs/search-index/files.json",
+          }
+          failures = []
+          for label, url in list(pages.items()) + list(catalogs.items()):
+              for attempt in range(3):
+                  try:
+                      request = Request(url, headers={
+                          "User-Agent": "HylePagesHealthcheck/1.0",
+                          "Origin": "https://hyle.space",
+                      })
+                      with urlopen(request, timeout=25) as response:
+                          data = response.read()
+                          code = response.status
+                          cors = response.headers.get("Access-Control-Allow-Origin", "")
+                      assert code == 200, f"HTTP {code}"
+                      if label in catalogs:
+                          document = json.loads(data)
+                          files = document if isinstance(document, list) else document.get("files")
+                          assert isinstance(files, list) and len(files) > 0, "Missing/empty file list"
+                          if "hyle-space.github.io" in url:
+                              assert cors in ("*", "https://hyle.space"), f"Missing CORS header ({cors!r})"
+                          print(f"OK   {label}: {len(files)} entries ({len(data)} bytes)")
+                      else:
+                          assert b"<html" in data[:500].lower(), "Not an HTML page"
+                          print(f"OK   {label}: HTTP {code}")
+                      break
+                  except (Exception, AssertionError) as error:
+                      if attempt == 2:
+                          failures.append(f"{label}: {type(error).__name__}: {error} at {url}")
+                      else:
+                          time.sleep(3)
+          if failures:
+              for item in failures: print("FAIL", item, file=sys.stderr)
+              sys.exit(1)
+          print("All public Hyle pages and catalogs passed.")
+          PY
