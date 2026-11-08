@@ -33,8 +33,9 @@ export function materialsSource({ id, name, label, base, home, searchHash = fals
   }
   function ensureWorker() {
     workerPromise ||= files().then(list => {
-      const worker = new Worker(base + 'search-worker.js', { type:'module' });
-      worker.postMessage({ type:'init', files:list });
+      // Workers must be same-origin; the shared worker fetches index shards from the site base.
+      const worker = new Worker('/search/search-worker.js', { type:'module' });
+      worker.postMessage({ type:'init', base, files:list });
       worker.onmessage = event => {
         const data = event.data;
         if (data.type !== 'results' || data.partial || data.id !== run || !pending) return;
