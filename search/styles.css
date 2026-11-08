@@ -53,14 +53,14 @@
 #hyle-next .search-app .brand img { width: 32px; height: 32px; }
 #hyle-next .search-app .brand small { color: var(--muted); font-size: 14px; font-weight: 400; border-left: 1px solid var(--line); padding-left: 12px; margin-left: 3px; }
 #hyle-next .search-app .top-actions { display: flex; align-items: center; gap: 5px; }
-#hyle-next .search-app .ai-trigger { display: grid; place-items: center; width: 44px; min-height: 44px; flex: 0 0 44px; padding: 0; }
+#hyle-next .search-app .ai-trigger { display: grid; place-items: center; width: 36px; min-height: 36px; flex: 0 0 36px; padding: 0; }
 #hyle-next .search-app .ai-trigger img { display: block; width: 24px; height: 24px; pointer-events: none; }
 #hyle-next .search-app .match-count { color: var(--cream); font-size: 12px; margin-bottom: 8px; }
 #hyle-next .search-app .body { width: 100%; max-width: 880px; margin-inline: auto; padding: 22px 28px 25px; }
-#hyle-next .search-app .search-field { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 3px 7px 3px 15px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+#hyle-next .search-app .search-field { display: flex; align-items: center; gap: 10px; width: min(520px, 44vw); height: 42px; min-height: 42px; margin-inline: auto; padding: 0 7px 0 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
 #hyle-next .search-app .search-field:focus-within { border-color: var(--warm); outline: 1px solid var(--warm); outline-offset: 0; }
 #hyle-next .search-app .search-field > .icon { color: var(--muted); }
-#hyle-next .search-app .search-field input { min-width: 0; flex: 1; width: 100%; padding: 6px 0; font-size: 21px; font-weight: 400; color: var(--text); background: transparent; border: 0; outline: none; }
+#hyle-next .search-app .search-field input { min-width: 0; flex: 1; width: 100%; padding: 0; font-size: 14px; font-weight: 400; color: var(--text); background: transparent; border: 0; outline: none; }
 #hyle-next .search-app .search-field input::placeholder { color: var(--muted); }
 #hyle-next .search-app .search-field input::-webkit-search-cancel-button { appearance: none; }
 #hyle-next .search-app .search-field button { color: var(--muted); }
@@ -129,14 +129,16 @@
 
 @container (max-width: 620px) {
   #hyle-next .search-app .topbar { padding: 7px 13px; min-height: 58px; }
-  #hyle-next .search-app .body { padding: 15px 15px 20px; }
-  #hyle-next .search-app .search-field { gap: 9px; padding-left: 12px; min-height: 53px; }
-  #hyle-next .search-app .search-field input { font-size: 18px; }
+  #hyle-next .search-app .body { padding: 15px 18px 20px; }
+  #hyle-next .search-app .search-field { width: 100%; height: 44px; min-height: 44px; gap: 8px; padding: 0 6px 0 12px; }
+  #hyle-next .search-app .search-field input { font-size: 16px; }
+  #hyle-next .search-app .search-field .ai-trigger { width: 40px; flex-basis: 40px; min-height: 40px; }
   #hyle-next .search-app .submit-query { display: none; }
   #hyle-next .search-app .query-note { font-size: 11px; padding-block: 8px; }
-  #hyle-next .search-app .tabs-bar { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 4px; }
-  #hyle-next .search-app .tabs { width: 100%; display: grid; grid-template-columns: .65fr 1fr 1.45fr .65fr .85fr; gap: 0; }
-  #hyle-next .search-app .tabs button { padding: 8px 1px; font-size: 13px; }
+  #hyle-next .search-app .tabs-bar { display: flex; align-items: stretch; gap: 5px; min-width: 0; }
+  #hyle-next .search-app .tabs { display: flex; flex: 1; width: auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
+  #hyle-next .search-app .tabs::-webkit-scrollbar { display: none; }
+  #hyle-next .search-app .tabs button { flex: 0 0 auto; white-space: nowrap; padding: 8px 10px; font-size: 13px; }
   #hyle-next .search-app .filter-button { width: 44px; padding-inline: 0; justify-content: center; gap: 2px; }
   #hyle-next .search-app .filter-label { display: none; }
   #hyle-next .search-app .result-title { font-size: 16px; }

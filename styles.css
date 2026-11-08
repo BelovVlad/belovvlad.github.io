@@ -297,7 +297,8 @@ dialog form>.checkbox-label{flex-direction:row;align-items:center;gap:9px;min-he
   .topbar{height:auto;flex-wrap:wrap;gap:12px;padding:14px 18px}
   .brand{gap:9px}.brand-mark{height:32px}.brand strong{font-size:21px}
   .settings-trigger{order:1}
-  .searchbox{order:2;flex-basis:100%;width:100%;height:40px;padding:0 12px}
+  .searchbox{order:2;flex-basis:100%;width:100%;height:44px;padding:0 12px}
+  .searchbox input{font-size:16px}
   kbd{display:none}
   main{padding:18px 18px 0;min-height:calc(100dvh - 120px)}
   .welcome{height:180px;padding:0 22px;border-radius:12px}
