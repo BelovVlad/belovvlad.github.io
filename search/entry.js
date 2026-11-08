@@ -1,4 +1,5 @@
 // A shared search surface; existing site navigation, catalog and AI entry stay intact.
+import { createSearchTransition } from '/search/transition.js';
 const input=document.getElementById('search');
 if(input) {
   const box=input.closest('.searchbox') || input.parentElement;
@@ -6,6 +7,7 @@ if(input) {
   let frame, overlay, loading, ready=false, opened=false, aiOpen=false, savedFocus, scroll=0, oldOverflow='', viewportFrame=0;
   const background=new Map();
   let query=input.value;
+  const transition=createSearchTransition({box,input,getOverlay:()=>overlay,getFrame:()=>frame});
   let entryDirty=false;
   input.addEventListener('input',()=>{entryDirty=true;});
   function prepare() {
@@ -16,7 +18,7 @@ if(input) {
       const back=document.createElement('button');back.type='button';back.textContent='← Назад';back.style.cssText='background:none;border:1px solid #25303a;border-radius:10px;color:inherit;padding:10px 16px;cursor:pointer';back.onclick=()=>close();
       const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Открываю поиск…';loading.append(back,status);
       frame=document.createElement('iframe');frame.title='Общий поиск Hyle';frame.style.cssText='display:block;visibility:hidden;width:100%;height:100%;border:0;color-scheme:dark';
-      frame.src='/search/?'+new URLSearchParams({from:source});overlay.append(loading,frame);document.body.append(overlay);
+      frame.src='/search/?'+new URLSearchParams({from:source,ui:'2'});overlay.append(loading,frame);document.body.append(overlay);
     }
   }
   function syncViewport() {
@@ -33,28 +35,45 @@ if(input) {
   input.addEventListener('focus',prepare,{once:true});
   function show(q=entryDirty?input.value:query,fromHistory=false) {
     entryDirty=false;query=q;prepare();
-    if(!opened){
+    const firstOpen=!opened;
+    if(firstOpen){
       savedFocus=document.activeElement;scroll=scrollY;oldOverflow=document.documentElement.style.overflow;
       for(const el of document.body.children){if(el===overlay)continue;background.set(el,el.inert);el.inert=true;}
       document.documentElement.style.overflow='hidden';
       if(!fromHistory)history.pushState({...history.state,hyleSearchOverlay:true},'');
     }
     opened=true;overlay.hidden=false;syncViewport();
-    if(ready)frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);
-    frame.focus();
+    if(firstOpen)transition.begin(query);
+    if(ready){
+      frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);
+      if(firstOpen)void transition.reveal();
+    }
+    if(!firstOpen)frame.focus();
   }
   function close(fromHistory=false){
     if(!opened)return;
     if(!fromHistory&&history.state?.hyleSearchOverlay){history.back();return;}
-    opened=false;overlay.hidden=true;document.documentElement.style.overflow=oldOverflow;
-    for(const [el,inert] of background)el.inert=inert;background.clear();
-    scrollTo(0,scroll);savedFocus?.focus({preventScroll:true});
+    opened=false;
+    const finish=()=>{
+      overlay.hidden=true;document.documentElement.style.overflow=oldOverflow;
+      for(const [el,inert] of background)el.inert=inert;background.clear();
+      input.value=query;
+      scrollTo(0,scroll);savedFocus?.focus({preventScroll:true});
+    };
+    if(ready)void transition.dismiss(query,finish);
+    else {transition.cancel();finish();}
   }
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==frame?.contentWindow)return;
     if(event.data?.type==='hyle-search-close')close();
     if(event.data?.type==='hyle-search-state')query=String(event.data.query||'');
-    if(event.data?.type==='hyle-search-ready'){ready=true;loading.hidden=true;frame.style.visibility='visible';if(opened)frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);}
+    if(event.data?.type==='hyle-search-ready'){
+      ready=true;loading.hidden=true;
+      if(opened){
+        frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);
+        void transition.reveal();
+      }
+    }
     if(event.data?.type==='hyle-search-ai-open'){
       if(!aiOpen)history.pushState({...history.state,hyleSearchOverlay:true,hyleSearchAi:true},'');
       aiOpen=true;
@@ -85,4 +104,8 @@ if(input) {
     trigger.addEventListener('pointerdown',e=>e.stopPropagation());
     trigger.addEventListener('click',e=>{e.preventDefault();show();});
   }
+  box.addEventListener('click',event=>{
+    if(event.target.closest('button'))return;
+    if(!opened)show();
+  });
 }

@@ -1,5 +1,5 @@
 import { SearchEngine } from './engine.js';
-import { mountSearch } from './ui.js';
+import { mountSearch } from './ui.js?v=2';
 import { loadCatalog } from './catalog.js';
 
 const params = new URLSearchParams(location.search);

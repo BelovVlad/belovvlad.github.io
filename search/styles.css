@@ -48,6 +48,8 @@
 #hyle-next .search-app .icon-button { display: inline-grid; place-items: center; width: 36px; padding: 0; }
 #hyle-next .search-app .topbar { display: flex; gap: 12px; align-items: center; justify-content: space-between; min-height: 65px; padding: 8px 25px; border-bottom: 1px solid var(--subtle-line); }
 #hyle-next .search-app .brand { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 500; }
+#hyle-next .search-app .topbar .brand { padding: 0; border: 0; min-height: 44px; cursor: pointer; background: transparent; }
+#hyle-next .search-app .topbar .brand:hover { background: transparent; opacity: .85; }
 #hyle-next .search-app .brand img { width: 32px; height: 32px; }
 #hyle-next .search-app .brand small { color: var(--muted); font-size: 14px; font-weight: 400; border-left: 1px solid var(--line); padding-left: 12px; margin-left: 3px; }
 #hyle-next .search-app .top-actions { display: flex; align-items: center; gap: 5px; }
