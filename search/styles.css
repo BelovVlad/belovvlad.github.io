@@ -57,7 +57,7 @@
 #hyle-next .search-app .ai-trigger img { display: block; width: 24px; height: 24px; pointer-events: none; }
 #hyle-next .search-app .match-count { color: var(--cream); font-size: 12px; margin-bottom: 8px; }
 #hyle-next .search-app .body { width: 100%; max-width: 880px; margin-inline: auto; padding: 22px 28px 25px; }
-#hyle-next .search-app .search-field { display: flex; align-items: center; gap: 10px; width: min(520px, 44vw); height: 42px; min-height: 42px; margin-inline: auto; padding: 0 7px 0 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+#hyle-next .search-app .search-field { display: flex; align-items: center; gap: 10px; width: min(824px, calc(100vw - 280px)); height: 42px; min-height: 42px; margin-inline: auto; padding: 0 7px 0 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
 #hyle-next .search-app .search-field:focus-within { border-color: var(--warm); outline: 1px solid var(--warm); outline-offset: 0; }
 #hyle-next .search-app .search-field > .icon { color: var(--muted); }
 #hyle-next .search-app .search-field input { min-width: 0; flex: 1; width: 100%; padding: 0; font-size: 14px; font-weight: 400; color: var(--text); background: transparent; border: 0; outline: none; }
