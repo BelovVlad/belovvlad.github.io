@@ -38,7 +38,7 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await page.keyboard.press('Control+k');
   const sharedSearch=page.frameLocator('iframe[title="Общий поиск Hyle"]');
   await expect(sharedSearch.locator('input[type="search"]')).toBeFocused();
-  await sharedSearch.getByRole('button',{name:'Закрыть поиск',exact:true}).click();
+  await sharedSearch.getByRole('button',{name:'Hyle — вернуться на главную',exact:true}).click();
   await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
   await page.locator('#search').fill('физического');await expect(page.locator('#resources .resource-card')).toHaveCount(1);
   await page.locator('#search').fill('Учёба');await expect(page.locator('#resources .resource-card')).toHaveCount(4);
@@ -46,6 +46,30 @@ test('real links, draft, search, empty category and keyboard shortcut',async ({p
   await page.locator('#search').fill('неизвестный ресурс');await expect(page.getByText('Ничего не нашлось')).toBeVisible();
   await page.getByRole('button',{name:'Сбросить поиск'}).click();await expect(page.locator('#resources .resource-card')).toHaveCount(defaults.resources.length);
   expect(errors).toEqual([]);
+});
+
+test('Home search bar morphs into global search and returns via Hyle logo',async ({page}) => {
+  // Observe the animated shared-element clone rather than relying on fragile frame timing.
+  await page.evaluate(() => {
+    window.__hyleMorphCount = 0;
+    new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node.nodeType === 1 && (node.matches?.('[data-hyle-transition]') ||
+            node.querySelector?.('[data-hyle-transition]'))) window.__hyleMorphCount++;
+      }
+    }).observe(document.body, { childList:true, subtree:true });
+  });
+
+  await page.locator('#search').click();
+  const frame = page.frameLocator('iframe[title="Общий поиск Hyle"]');
+  await expect(frame.getByRole('button',{name:'Hyle — вернуться на главную',exact:true})).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__hyleMorphCount)).toBeGreaterThan(0);
+  await expect(frame.getByRole('button',{name:'Закрыть поиск',exact:true})).toHaveCount(0);
+
+  await frame.getByRole('button',{name:'Hyle — вернуться на главную',exact:true}).click();
+  await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.__hyleMorphCount)).toBeGreaterThan(1);
+  await expect(page.locator('#search')).toBeVisible();
 });
 
 test('content search in other sites degrades to a link when they are unreachable',async ({page}) => {
