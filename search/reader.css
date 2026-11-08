@@ -60,3 +60,9 @@
 @media (prefers-reduced-motion: reduce) {
   .hyle-reader-back, .hyle-reader-original { transition: none; }
 }
+
+/* PDF reader supplies its own back arrow, toolbar and direct-file action. */
+.hyle-reader-overlay.hyle-reader-pdf .hyle-reader-back,
+.hyle-reader-overlay.hyle-reader-pdf .hyle-reader-original {
+  display: none;
+}
