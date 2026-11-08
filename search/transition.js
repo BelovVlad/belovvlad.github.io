@@ -51,6 +51,7 @@ export function createSearchTransition({ box, input, getOverlay, getFrame }) {
   function makeGhost(rect, value, large = false) {
     const overlay = getOverlay();
     ghost = box.cloneNode(true);
+    ghost.setAttribute('data-hyle-transition', '');
     ghost.removeAttribute('for');
     ghost.removeAttribute('role');
     ghost.setAttribute('aria-hidden', 'true');
