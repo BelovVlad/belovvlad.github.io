@@ -1,9 +1,9 @@
-import defaults from '../config.js';
+import defaults, { ORG_PAGES } from '../config.js';
 
 const sources = {
-  helper: 'https://hyle.space/Helper_PF_NSU/materials.json',
-  department: 'https://hyle.space/Department/viewer/search-index/files.json',
-  nsu: 'https://hyle.space/NSU_FP_Y4_S1/docs/search-index/files.json'
+  helper: ORG_PAGES + 'Helper_PF_NSU/materials.json',
+  department: ORG_PAGES + 'Department/viewer/search-index/files.json',
+  nsu: ORG_PAGES + 'NSU_FP_Y4_S1/docs/search-index/files.json'
 };
 export async function loadCatalog(onUpdate = () => {}) {
   const failed = [], batches = new Map();
