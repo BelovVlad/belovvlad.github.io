@@ -1,5 +1,5 @@
-// Full-text search in the other Hyle sites. They share this origin, so the hub runs each
-// site's own search worker over its own index and links straight into its reader.
+// Full-text search in other Hyle sites. Their GitHub Pages moved to Hyle-space;
+// use a same-origin worker that fetches remote page indices over CORS.
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 // The NSU site names subjects and sections by the path (site.js subjectOf/sectionOf);
