@@ -72,6 +72,28 @@ test('Home search bar morphs into global search and returns via Hyle logo',async
   await expect(page.locator('#search')).toBeVisible();
 });
 
+for (const width of [320, 375, 430, 600]) test(`mobile search keeps Home bar dimensions at ${width}px`,async ({page}) => {
+  await page.setViewportSize({width,height:780});
+  const home = await page.locator('.topbar .searchbox').evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return {width:rect.width,height:rect.height,font:parseFloat(getComputedStyle(element.querySelector('input')).fontSize)};
+  });
+  await page.locator('#search').click();
+  const iframe = page.frameLocator('iframe[title="Общий поиск Hyle"]');
+  await expect(iframe.locator('.search-field')).toBeVisible();
+  const inside = await iframe.locator('.search-field').evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return {width:rect.width,height:rect.height,font:parseFloat(getComputedStyle(element.querySelector('input')).fontSize)};
+  });
+  expect(inside.height).toBe(home.height);
+  expect(inside.font).toBe(home.font);
+  expect(Math.abs(inside.width-home.width)).toBeLessThanOrEqual(2);
+  await expect(iframe.getByRole('button',{name:'Hyle — вернуться на главную',exact:true})).toBeVisible();
+  expect(await iframe.locator('body').evaluate(element=>element.scrollWidth <= window.innerWidth+1)).toBe(true);
+  await iframe.getByRole('button',{name:'Hyle — вернуться на главную',exact:true}).click();
+  await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
+});
+
 test('content search in other sites degrades to a link when they are unreachable',async ({page}) => {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/NSU_FP_Y4_S1/**',route=>route.fulfill({status:404,body:'Not found'}));
