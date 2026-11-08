@@ -1,7 +1,7 @@
 import { SearchEngine } from './engine.js?v=4';
 import { mountSearch } from './ui.js?v=2';
 import { loadCatalog } from './catalog.js?v=4';
-import { installReaderNavigation } from './reader.js?v=1';
+import { installReaderNavigation } from './reader.js?v=2';
 
 const params = new URLSearchParams(location.search);
 const embedded = window.parent !== window;
