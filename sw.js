@@ -20,7 +20,8 @@ function isShellPath(path) {
   const resource = site[2];
   return resource === '' || resource === 'index.html' ||
     resource === 'materials.json' ||
-    /^(?:assets|viewer)\/.*\.(?:js|mjs|css|html|woff2|svg|png|json)$/.test(resource);
+    /^assets\/.*\.(?:js|mjs|css|woff2|svg|png)$/.test(resource) ||
+    /^viewer\/(?:pdfjs|notebook|vendor)\/.*\.(?:js|mjs|css|html|woff2|svg|png)$/.test(resource);
 }
 let stalledUntil = 0;
 // The response if the network answers within WAIT ms, else the copy. A timeout marks the connection
@@ -43,7 +44,8 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || url.origin !== root.origin) return;
   const path = url.pathname.slice(root.pathname.length);
   if (!isShellPath(path)) return;
-  const key = new URL(path, root).href;
+  // Include version query parameters in cache identity to avoid mixing deploys.
+  const key = event.request.url;
   // Prefer a fresh response if it arrives immediately. Otherwise show cached HTML,
   // JS, CSS or metadata after 250 ms and refresh them in the background. This avoids
   // waiting seconds on repeated opens during slow GitHub Pages connections.
