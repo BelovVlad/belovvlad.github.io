@@ -1,7 +1,7 @@
 import { SearchEngine } from './engine.js?v=4';
 import { mountSearch } from './ui.js?v=2';
 import { loadCatalog } from './catalog.js?v=4';
-import { installReaderNavigation } from './reader.js?v=3';
+import { installReaderNavigation } from './reader.js?v=4';
 
 const params = new URLSearchParams(location.search);
 const embedded = window.parent !== window;
@@ -24,7 +24,7 @@ try {
     return { site: selected.length === 3 ? '' : selected.join('|') || '__none__', subject:s.subject, semester:s.semester };
   };
   const aiButton = document.querySelector('#ai-button'); aiButton.disabled = true;
-  void import('./ai.js?v=3').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
+  void import('./ai.js?v=4').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin || event.source!==parent)return;
     if(event.data?.type==='hyle-search-open')app.open(event.data.query);

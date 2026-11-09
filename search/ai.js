@@ -85,8 +85,9 @@ function init() {
     if (performance.now() < headerSettling || performance.now() > scrollIntent || !filters.hidden || !sheet.hidden) return;
     if (next < 24) { showHead(true); return; }
     scrollTravel = Math.sign(scrollTravel) === Math.sign(delta) ? scrollTravel + delta : delta;
-    if (scrollTravel > 24 && !head.contains(document.activeElement)) showHead(false);
-    else if (scrollTravel < -14) showHead(true);
+    // Keep the Back control reachable even after a long answer or PDF return.
+    // No auto-hidden header that can strand the user inside AI.
+    if (scrollTravel < -14) showHead(true);
   }, {passive:true});
   // The parent search overlay sizes its iframe to the TOP-LEVEL visual viewport.
   // Direct site dialogs follow their own viewport, including keyboard resize and pan.
@@ -193,9 +194,15 @@ function init() {
   }
   function close(fromHistory) {
     if (state !== 'open' && state !== 'opening') return;
+    if (!fromHistory && window.parent !== window) {
+      parent.postMessage({type:'hyle-search-ai-close-request'},location.origin);
+      return;
+    }
     sheet.hidden = true; toggleFilters(false); field.blur(); abort?.abort(); layer.classList.remove('live');
-    if (!fromHistory && window.parent !== window) { parent.postMessage({type:'hyle-search-ai-close-request'},location.origin); return; }
-    if (!fromHistory && history.state?.hyleAi) { history.back(); return; }
+    if (!fromHistory && history.state?.hyleAi) {
+      const next = { ...history.state }; delete next.hyleAi;
+      history.replaceState(next, '');
+    }
     size();
     if (still.matches) { state = 'closed'; layer.hidden = true; document.documentElement.classList.remove('ai-open'); return; }
     state = 'closing'; t0 = performance.now(); flow = 0; kick();
@@ -367,7 +374,12 @@ function init() {
   compose.addEventListener('submit', e => { e.preventDefault(); if (abort) return; const q = field.value; field.value = ''; grow(); ask(q); });
   field.addEventListener('focus', () => { toggleFilters(false); queueViewport(); });
   field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); compose.requestSubmit(); } });
-  const grow = () => { field.style.height = 'auto'; field.style.height = Math.min(140, field.scrollHeight) + 'px'; };
+  const grow = () => {
+    // Shrink after sending a multiline question, including on mobile Safari.
+    field.style.height = '40px';
+    field.style.height = Math.min(120, Math.max(40, field.scrollHeight)) + 'px';
+  };
+  grow();
   field.addEventListener('input', grow);
   layer.addEventListener('click', e => {
     const act = e.target.closest('[data-act]')?.dataset.act;

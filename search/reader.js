@@ -91,8 +91,16 @@ export function installReaderNavigation() {
   }
 
   function goBack() {
-    if (history.state?.[HISTORY_KEY]) history.back();
-    else hide();
+    // Reader iframe entries can sit between the parent history entries.
+    // A native PDF Back must never move through those entries instead of
+    // restoring the search/AI view underneath.
+    if (history.state?.[HISTORY_KEY]) {
+      const next = { ...history.state };
+      delete next[HISTORY_KEY];
+      delete next[FROM_AI_KEY];
+      history.replaceState(next, '', location.href);
+    }
+    hide();
   }
 
   function requestClose() {
