@@ -3,6 +3,7 @@
 const READER_PATH = /^\/(?:(?:Helper_PF_NSU|Department)\/viewer|NSU_FP_Y4_S1\/docs)\/(?:pdfjs\/viewer|notebook\/(?:viewer|code))\.html$/;
 const READER_ORIGINS = new Set(['https://hyle-space.github.io', 'https://hyle.space']);
 const HISTORY_KEY = 'hyleSearchReader';
+const FROM_AI_KEY = 'hyleSearchReaderFromAi';
 
 function readerUrl(href) {
   let url;
@@ -49,7 +50,7 @@ export function installReaderNavigation() {
     back.title = '';
   }
 
-  function show(url) {
+  function show(url, fromAi = false) {
     if (!overlay.hidden && activeUrl === url.href) return;
     if (overlay.hidden) {
       previousFocus = document.activeElement;
@@ -64,6 +65,7 @@ export function installReaderNavigation() {
     // Do not add an overlapping search button or enable its reduced embed chrome.
     const isPdf = url.pathname.includes('/pdfjs/viewer.html');
     overlay.classList.toggle('hyle-reader-pdf', isPdf);
+    overlay.classList.toggle('hyle-reader-from-ai', fromAi);
     original.href = url.href;
     frame = document.createElement('iframe');
     frame.className = 'hyle-reader-frame';
@@ -95,6 +97,8 @@ export function installReaderNavigation() {
 
   function requestClose() {
     if (overlay.hidden) return;
+    // AI citations return to the same answer immediately. The search remains mounted.
+    if (overlay.classList.contains('hyle-reader-from-ai')) { goBack(); return; }
     // The PDF reader flushes annotations before acknowledging the close request.
     if (frame && activeUrl.includes('/pdfjs/') && closeRequested !== true) {
       if (closeRequested === 'retry') { goBack(); return; }
@@ -116,20 +120,25 @@ export function installReaderNavigation() {
 
   document.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    const link = event.target.closest?.('.results a[href]');
+    const link = event.target.closest?.('.results a[href], .ai-dialog .ai-text a[href], .ai-dialog .ai-sources a[href]');
     if (!link) return;
+    const fromAi = !!link.closest('.ai-dialog');
     const url = readerUrl(link.href);
-    if (!url) return; // Sites, locked files and external links keep their normal behavior.
+    if (!url) {
+      // Preserve the dialog for non-reader links too.
+      if (fromAi) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     document.activeElement?.blur();
-    history.pushState({ ...history.state, [HISTORY_KEY]: url.href }, '', location.href);
-    show(url);
+    history.pushState({ ...history.state, [HISTORY_KEY]: url.href, [FROM_AI_KEY]: fromAi }, '', location.href);
+    show(url, fromAi);
   }, true);
 
   window.addEventListener('popstate', () => {
     const url = readerUrl(history.state?.[HISTORY_KEY] || '');
-    if (url) show(url);
+    if (url) show(url, !!history.state?.[FROM_AI_KEY]);
     else hide();
   });
 
@@ -146,5 +155,5 @@ export function installReaderNavigation() {
   }, true);
 
   const restored = readerUrl(history.state?.[HISTORY_KEY] || '');
-  if (restored) show(restored);
+  if (restored) show(restored, !!history.state?.[FROM_AI_KEY]);
 }
