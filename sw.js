@@ -2,12 +2,26 @@
 // worker's scope covers it all, but it answers only for the hub's own files: requests of the
 // other sites (/NSU_FP_Y4_S1/, /Department/, /diploma/ — those with their own, more specific
 // workers or none) are left to the browser untouched.
-const CACHE = 'pweb-hub-v21';
+const CACHE = 'pweb-hub-v22';
 const SHELL = ['', 'index.html', 'styles.css', 'app.js', 'model.js', 'config.js', 'icons.js', 'site-search.js', 'hero.js', 'dots.js', 'install.js', 'manifest.webmanifest',
   'assets/logo.svg', 'assets/logo-launch.svg', 'assets/favicon-16.png', 'assets/favicon-32.png', 'assets/app-192.png', 'assets/app-512.png', 'assets/app-maskable-512.png', 'assets/apple-touch-icon.png', 'assets/fonts/roboto-condensed-cyrillic-wght-normal.woff2', 'assets/fonts/roboto-condensed-latin-wght-normal.woff2',
   'assets/fonts/roboto-condensed-latin-ext-wght-normal.woff2'];
 const root = new URL('./', self.location);
-const WAIT = 2500, STALL = 15000;
+const WAIT = 250, STALL = 15000;
+
+// Cache only application shell assets. Never cache PDFs, API requests, user files,
+// or anything from a different origin. This worker controls all hyle.space paths,
+// so it can speed up Helper and Department as well as the home page.
+function isShellPath(path) {
+  if (SHELL.includes(path)) return true;
+  if (/^search\/.*\.(?:js|mjs|css|svg|png|woff2|html)$/.test(path)) return true;
+  const site = /^(Helper_PF_NSU|Department)\/(.*)$/.exec(path);
+  if (!site) return false;
+  const resource = site[2];
+  return resource === '' || resource === 'index.html' ||
+    resource === 'materials.json' ||
+    /^(?:assets|viewer)\/.*\.(?:js|mjs|css|html|woff2|svg|png|json)$/.test(resource);
+}
 let stalledUntil = 0;
 // The response if the network answers within WAIT ms, else the copy. A timeout marks the connection
 // as stalled for STALL ms, so the hub's other files do not each wait WAIT ms of their own.
@@ -28,15 +42,16 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== root.origin) return;
   const path = url.pathname.slice(root.pathname.length);
-  if (!SHELL.includes(path)) return;
+  if (!isShellPath(path)) return;
   const key = new URL(path, root).href;
-  // Network first, so the hub is always current online; the copy is for when there is no connection.
-  // "No connection" is not always a quick error: with Wi-Fi off a VPN or virtual adapter keeps the
-  // system "online" and the request hangs on DNS until it times out, and a phone held the splash
-  // screen for good. So the copy answers at once when the browser knows it is offline or the
-  // connection has stalled, and after WAIT ms otherwise; the request goes on and refreshes the copy.
+  // Prefer a fresh response if it arrives immediately. Otherwise show cached HTML,
+  // JS, CSS or metadata after 250 ms and refresh them in the background. This avoids
+  // waiting seconds on repeated opens during slow GitHub Pages connections.
   const network = fetch(event.request).then(response => {
-    if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put(key, copy))); }
+    if (response.ok && response.type === 'basic' && new URL(response.url).origin === root.origin) {
+      const copy = response.clone();
+      event.waitUntil(caches.open(CACHE).then(cache => cache.put(key, copy)));
+    }
     return response;
   });
   event.waitUntil(network.catch(() => {}));
