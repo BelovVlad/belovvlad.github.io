@@ -48,8 +48,13 @@ function init() {
       </form>
       </div>
       <div class="ai-sheet" id="ai-sheet" hidden>
-        <div class="ai-sheet-head"><strong>Диалоги</strong><span>Хранятся только в этом браузере</span></div>
-        <div class="ai-sheet-list" id="ai-sheet-list"></div>
+        <section class="ai-sheet-panel" role="dialog" aria-modal="true" aria-label="История диалогов">
+          <div class="ai-sheet-head">
+            <div class="ai-sheet-heading"><strong>Диалоги</strong><span>Хранятся только в этом браузере</span></div>
+            <button type="button" class="ai-sheet-close" data-act="close-history" aria-label="Закрыть историю">×</button>
+          </div>
+          <div class="ai-sheet-list" id="ai-sheet-list"></div>
+        </section>
       </div>
     </section>
     <canvas class="ai-frame" aria-hidden="true"></canvas>`;
@@ -195,7 +200,12 @@ function init() {
     if (still.matches) { state = 'closed'; layer.hidden = true; document.documentElement.classList.remove('ai-open'); return; }
     state = 'closing'; t0 = performance.now(); flow = 0; kick();
   }
-  addEventListener('popstate', () => { if (window.parent === window && (state === 'open' || state === 'opening')) close(true); });
+  // A document viewer adds its own history entry above the open AI dialog.
+  // Browser Back from a PDF must restore the answer, not close the dialog.
+  addEventListener('popstate', () => {
+    if (window.parent === window && (state === 'open' || state === 'opening')
+        && !history.state?.hyleAi) close(true);
+  });
   addEventListener('message', event => {
     if(event.origin===location.origin && event.source===window.parent && event.data?.type==='hyle-search-ai-close')close(true);
   });
@@ -367,7 +377,14 @@ function init() {
     if (act === 'show-head') showHead(true);
     if (act === 'close') close();
     if (act === 'new') { abort?.abort(); newDialog(); field.focus(); }
-    if (act === 'list') { toggleFilters(false); renderSheet(); sheet.hidden = !sheet.hidden; }
+    if (act === 'list') {
+      toggleFilters(false); renderSheet(); sheet.hidden = !sheet.hidden;
+      if (!sheet.hidden) sheet.querySelector('.ai-sheet-close').focus({preventScroll:true});
+    }
+    if (act === 'close-history') {
+      sheet.hidden = true;
+      layer.querySelector('[data-act="list"]').focus({preventScroll:true});
+    }
     const pick = e.target.closest('[data-dialog]');
     if (pick) { abort?.abort(); currentId = pick.dataset.dialog; sheet.hidden = true; renderDialog(); }
     const del = e.target.closest('[data-delete]');
