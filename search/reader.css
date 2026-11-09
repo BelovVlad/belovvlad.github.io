@@ -66,3 +66,16 @@
 .hyle-reader-overlay.hyle-reader-pdf .hyle-reader-original {
   display: none;
 }
+
+/* AI source links return to the conversation instead of trapping readers in PDF.js.
+   Keep a floating action below the page, never an extra top toolbar. */
+.hyle-reader-overlay.hyle-reader-from-ai .hyle-reader-back {
+  display:block;
+  top:auto;
+  bottom:max(12px,env(safe-area-inset-bottom,0px));
+  left:max(10px,env(safe-area-inset-left,0px));
+  height:44px;
+  background:#10151df5;
+  box-shadow:0 2px 14px #0009,0 0 0 1px #34404c;
+}
+.hyle-reader-overlay.hyle-reader-from-ai .hyle-reader-original{display:grid}
