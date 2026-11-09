@@ -48,9 +48,30 @@ test('PDF citation returns to the same AI answer on browser Back', async ({ page
   await expect(page.locator('.ai-bot')).toContainText('Формула метода прогонки');
   await page.locator('.ai-sources a').first().click();
   await expect(page.locator('.hyle-reader-overlay')).toBeVisible();
-  await expect(page.locator('.hyle-reader-back')).toBeVisible();
+  await expect(page.locator('.hyle-reader-back')).toBeHidden();
+  await expect(page.locator('.hyle-reader-original')).toBeHidden();
   await page.goBack();
   await expect(page.locator('.hyle-reader-overlay')).toBeHidden();
   await expect(page.locator('.ai-dialog')).toBeVisible();
+  await expect(page.locator('.ai-bot')).toContainText('Формула метода прогонки');
+});
+
+test('Native PDF Back returns to AI answer without floating controls', async ({ page }) => {
+  await page.route('https://hyle.space/NSU_FP_Y4_S1/docs/pdfjs/viewer.html**', route =>
+    route.fulfill({ contentType: 'text/html', body: `<!doctype html>
+      <title>PDF test</title>
+      <button id="back">Назад</button>
+      <script>
+        document.querySelector('#back').onclick = () => {
+          parent.postMessage({ type: 'nsu-close-pdf' }, new URL(document.referrer).origin);
+        };
+      </script>` }));
+  await openSavedDialog(page);
+  await page.locator('[data-dialog="ai-navigation-test"]').click();
+  await page.locator('.ai-sources a').first().click();
+  await expect(page.locator('.hyle-reader-back')).toBeHidden();
+  await expect(page.locator('.hyle-reader-original')).toBeHidden();
+  await page.frameLocator('.hyle-reader-frame').locator('#back').click();
+  await expect(page.locator('.hyle-reader-overlay')).toBeHidden();
   await expect(page.locator('.ai-bot')).toContainText('Формула метода прогонки');
 });
