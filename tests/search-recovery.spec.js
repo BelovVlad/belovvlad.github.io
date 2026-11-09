@@ -55,6 +55,8 @@ test('mobile touch starts search without leaving Home inert', async ({ page }) =
 });
 
 test('AI remains closable after repeated document opens', async ({ page }) => {
+  await page.route('https://hyle.space/NSU_FP_Y4_S1/docs/pdfjs/viewer.html**', route =>
+    route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>PDF</title><p>PDF preview</p>' }));
   await page.goto('/search/');
   await expect(page.locator('#ai-button')).toBeEnabled();
   await page.locator('#ai-button').click();
