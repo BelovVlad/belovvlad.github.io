@@ -3,7 +3,22 @@
 // dialog appears inside it. Answers come from the home server (api.hyle.space/ask, server-sent events)
 // and cite pages of the books; dialogs are kept only in this browser.
 // The same file runs on every Hyle subsite: a site may set window.HelperScope / window.HelperBookPage.
-import { renderAnswer, sourceLink } from './ai-renderer.js';
+// The heavy Markdown/KaTeX renderer is loaded only after the assistant opens.
+// On a slow connection, keep the conversation usable with escaped plain text.
+let answerRenderer = null;
+let answerRendererPromise = null;
+function ensureAnswerRenderer() {
+  if (!answerRendererPromise) {
+    answerRendererPromise = import('./ai-renderer.js')
+      .then(module => { answerRenderer = module; return module; })
+      .catch(error => {
+        console.warn('Hyle AI renderer unavailable; using plain text.', error);
+        answerRendererPromise = null;
+        return null;
+      });
+  }
+  return answerRendererPromise;
+}
 import { consumeSSE } from './ai-sse.js';
 import { bearerAuthorization } from './ai-auth.js';
 const API = 'https://api.hyle.space';
@@ -190,6 +205,10 @@ function init() {
     if (window.parent !== window) parent.postMessage({type:'hyle-search-ai-open'},location.origin);
     else try { history.pushState({ ...(history.state || {}), hyleAi: true }, ''); } catch {}
     prepare();
+    void ensureAnswerRenderer().then(() => {
+      // Restore formatted history once loaded; never replace an in-flight answer bubble.
+      if (answerRenderer && (state === 'opening' || state === 'open') && !abort) renderDialog();
+    });
     if (still.matches) { state = 'open'; veil.style.opacity = 1; dialog.style.clipPath = 'none'; ctx.clearRect(0, 0, frameCanvas.width, frameCanvas.height); afterOpen(); return; }
     state = 'opening'; t0 = performance.now(); kick();
   }
@@ -279,10 +298,10 @@ function init() {
   }
   const userBubble = text => { const b = document.createElement('div'); b.className = 'ai-me'; b.textContent = text; return b; };
   function bookLink(s, q) {
-    return sourceLink(s);
+    return answerRenderer?.sourceLink(s) || '';
   }
   function format(text, sources) {
-    return renderAnswer(text, sources);
+    return answerRenderer ? answerRenderer.renderAnswer(text, sources) : esc(text).replace(/\n/g, '<br>');
   }
   function botBubble(m) {
     const b = document.createElement('div'); b.className = 'ai-bot';
