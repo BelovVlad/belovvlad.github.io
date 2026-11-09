@@ -57,7 +57,12 @@ self.addEventListener('fetch', event => {
     return response;
   });
   event.waitUntil(network.catch(() => {}));
-  event.respondWith(caches.match(key).then(cached => {
+  event.respondWith(caches.match(key).then(async cached => {
+    // A fresh install precaches plain asset URLs, while HTML uses ?v= versions.
+    // Allow the plain precached shell offline until the versioned URL is cached.
+    if (!cached && url.search && SHELL.includes(path)) {
+      cached = await caches.match(new URL(path, root).href);
+    }
     if (!cached) return network.catch(() => Response.error());
     return !self.navigator.onLine || Date.now() < stalledUntil ? cached : firstOf(network, cached);
   }));
