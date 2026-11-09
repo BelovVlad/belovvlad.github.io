@@ -8,7 +8,7 @@ if(input) {
   const background=new Map();
   let query=input.value;
   const transition=createSearchTransition({box,input,getOverlay:()=>overlay,getFrame:()=>frame});
-  let entryDirty=false;
+  let entryDirty=false, navigationGeneration=0, finishClose=null;
   input.addEventListener('input',()=>{entryDirty=true;});
   function prepare() {
     if(!overlay){
@@ -41,6 +41,9 @@ if(input) {
     show();
   });
   function show(q=entryDirty?input.value:query,fromHistory=false) {
+    // Finalize any interrupted closing animation before starting another open.
+    finishClose?.();
+    navigationGeneration++;
     entryDirty=false;query=q;prepare();
     const firstOpen=!opened;
     if(firstOpen){
@@ -71,17 +74,30 @@ if(input) {
       aiOpen=false;
       if(ready)frame.contentWindow?.postMessage({type:'hyle-search-ai-close'},location.origin);
     }
-    transition.cancel();
-    overlay.hidden=true;
-    overlay.style.pointerEvents='none';
-    frame.style.visibility='hidden';
-    frame.style.opacity='1';
-    document.documentElement.style.overflow=oldOverflow;
-    for(const [el,inert] of background)el.inert=inert;
-    background.clear();
-    input.value=query;
-    scrollTo(0,scroll);
-    savedFocus?.focus({preventScroll:true});
+    const generation=++navigationGeneration;
+    let finished=false, fallback;
+    const finish=()=>{
+      if(finished||generation!==navigationGeneration)return;
+      finished=true;clearTimeout(fallback);finishClose=null;
+      transition.cancel();
+      overlay.hidden=true;
+      overlay.style.pointerEvents='none';
+      frame.style.visibility='hidden';
+      frame.style.opacity='1';
+      document.documentElement.style.overflow=oldOverflow;
+      for(const [el,inert] of background)el.inert=inert;
+      background.clear();
+      input.value=query;
+      scrollTo(0,scroll);
+      savedFocus?.focus({preventScroll:true});
+    };
+    finishClose=finish;
+    if(ready){
+      // Preserve the usual closing animation, but always restore the main site
+      // if Web Animations are canceled or a mobile browser pauses the iframe.
+      fallback=setTimeout(finish,850);
+      void transition.dismiss(query,finish).then(finish,finish);
+    }else finish();
   }
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==frame?.contentWindow)return;
