@@ -5,6 +5,7 @@
 // The same file runs on every Hyle subsite: a site may set window.HelperScope / window.HelperBookPage.
 import { renderAnswer, sourceLink } from './ai-renderer.js';
 import { consumeSSE } from './ai-sse.js';
+import { bearerAuthorization } from './ai-auth.js';
 const API = 'https://api.hyle.space';
 const HOLD = 700, OPEN = 320, CLOSE = 220;
 const KEY = 'hyle.ai.key', STORE = 'hyle.ai.dialogs.v1';
@@ -333,7 +334,7 @@ function init() {
     try {
       const response = await fetch(API + '/ask', {
         method: 'POST', signal: controller.signal,
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        headers: { 'Content-Type': 'application/json', Authorization: bearerAuthorization(key) },
         body: JSON.stringify({ q: question, history, ...(scope.site ? { site: scope.site } : {}), ...(scope.semester ? { semester: scope.semester } : {}), ...(scope.subject ? { subject: scope.subject } : {}) }),
       });
       if (!response.ok) {
@@ -366,7 +367,11 @@ function init() {
       d.updated = now(); persist(); refresh();
     } catch (error) {
       if (error.name === 'AbortError') { answer.interrupted = true; d.updated = now(); persist(); refresh(); return; }
-      fail('Домашний сервер не отвечает. Проверьте, что ноутбук включён, и попробуйте ещё раз.');
+      // Not every browser-side fetch or rendering failure means the server is offline.
+      console.error('Hyle AI request failed:', error);
+      if (error instanceof TypeError && /headers|ISO-8859-1|ByteString/i.test(error.message))
+        fail('Не удалось передать пароль. Обновите страницу и повторите попытку.');
+      else fail('Не удалось завершить запрос к ИИ. Проверьте соединение и повторите попытку.');
     } finally { if (abort === controller) abort = null; }
   }
   function keepBottom() { if (messages.scrollHeight - messages.scrollTop - messages.clientHeight < 160) messages.scrollTop = messages.scrollHeight; }
