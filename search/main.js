@@ -24,7 +24,7 @@ try {
     return { site: selected.length === 3 ? '' : selected.join('|') || '__none__', subject:s.subject, semester:s.semester };
   };
   const aiButton = document.querySelector('#ai-button'); aiButton.disabled = true;
-  void import('./ai.js?v=4').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
+  void import('./ai.js?v=5').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin || event.source!==parent)return;
     if(event.data?.type==='hyle-search-open')app.open(event.data.query);
