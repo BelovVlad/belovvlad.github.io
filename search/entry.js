@@ -18,7 +18,7 @@ if(input) {
       const back=document.createElement('button');back.type='button';back.textContent='← Назад';back.style.cssText='background:none;border:1px solid #25303a;border-radius:10px;color:inherit;padding:10px 16px;cursor:pointer';back.onclick=()=>close();
       const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Открываю поиск…';loading.append(back,status);
       frame=document.createElement('iframe');frame.title='Общий поиск Hyle';frame.style.cssText='display:block;visibility:hidden;width:100%;height:100%;border:0;color-scheme:dark';
-      frame.src='/search/?'+new URLSearchParams({from:source,ui:'4'});overlay.append(loading,frame);document.body.append(overlay);
+      frame.src='/search/?'+new URLSearchParams({from:source,ui:'5'});overlay.append(loading,frame);document.body.append(overlay);
     }
   }
   function syncViewport() {
@@ -49,7 +49,7 @@ if(input) {
       document.documentElement.style.overflow='hidden';
       if(!fromHistory)history.pushState({...history.state,hyleSearchOverlay:true},'');
     }
-    opened=true;overlay.hidden=false;syncViewport();
+    opened=true;overlay.hidden=false;overlay.style.pointerEvents='auto';syncViewport();
     if(firstOpen)transition.begin(query);
     if(ready){
       frame.contentWindow.postMessage({type:'hyle-search-open',query},location.origin);
@@ -59,16 +59,29 @@ if(input) {
   }
   function close(fromHistory=false){
     if(!opened)return;
-    if(!fromHistory&&history.state?.hyleSearchOverlay){history.back();return;}
+    // A PDF iframe has its own session history: history.back() can navigate the
+    // document rather than close this overlay, leaving the whole hub inert.
+    // Close immediately and never leave input/navigation blocked by an animation.
+    if(!fromHistory&&history.state?.hyleSearchOverlay){
+      const next={...history.state};delete next.hyleSearchOverlay;delete next.hyleSearchAi;
+      history.replaceState(next,'');
+    }
     opened=false;
-    const finish=()=>{
-      overlay.hidden=true;document.documentElement.style.overflow=oldOverflow;
-      for(const [el,inert] of background)el.inert=inert;background.clear();
-      input.value=query;
-      scrollTo(0,scroll);savedFocus?.focus({preventScroll:true});
-    };
-    if(ready)void transition.dismiss(query,finish);
-    else {transition.cancel();finish();}
+    if(aiOpen){
+      aiOpen=false;
+      if(ready)frame.contentWindow?.postMessage({type:'hyle-search-ai-close'},location.origin);
+    }
+    transition.cancel();
+    overlay.hidden=true;
+    overlay.style.pointerEvents='none';
+    frame.style.visibility='hidden';
+    frame.style.opacity='1';
+    document.documentElement.style.overflow=oldOverflow;
+    for(const [el,inert] of background)el.inert=inert;
+    background.clear();
+    input.value=query;
+    scrollTo(0,scroll);
+    savedFocus?.focus({preventScroll:true});
   }
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==frame?.contentWindow)return;
@@ -82,12 +95,18 @@ if(input) {
       }
     }
     if(event.data?.type==='hyle-search-ai-open'){
-      if(!aiOpen)history.pushState({...history.state,hyleSearchOverlay:true,hyleSearchAi:true},'');
+      // AI is a nested view, not another browser-history entry.
+      if(opened&&history.state?.hyleSearchOverlay)
+        history.replaceState({...history.state,hyleSearchAi:true},'');
       aiOpen=true;
     }
     if(event.data?.type==='hyle-search-ai-close-request'){
-      if(history.state?.hyleSearchAi)history.back();
-      else {aiOpen=false;frame.contentWindow.postMessage({type:'hyle-search-ai-close'},location.origin);}
+      aiOpen=false;
+      if(history.state?.hyleSearchAi){
+        const next={...history.state};delete next.hyleSearchAi;
+        history.replaceState(next,'');
+      }
+      frame.contentWindow.postMessage({type:'hyle-search-ai-close'},location.origin);
     }
   });
   window.addEventListener('popstate',event=>{
