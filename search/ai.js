@@ -597,8 +597,8 @@ function init() {
   field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); compose.requestSubmit(); } });
   const grow = () => {
     // Shrink after sending a multiline question, including on mobile Safari.
-    field.style.height = '40px';
-    field.style.height = Math.min(120, Math.max(40, field.scrollHeight)) + 'px';
+    field.style.height = '34px';
+    field.style.height = Math.min(120, Math.max(34, field.scrollHeight)) + 'px';
   };
   grow();
   field.addEventListener('input', grow);

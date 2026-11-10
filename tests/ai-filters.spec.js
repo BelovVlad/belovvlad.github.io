@@ -53,3 +53,18 @@ test('Escape closes the options first, then filters',async ({page})=>{
   await page.keyboard.press('Escape');
   await expect(page.locator('.ai-filters')).toBeHidden();
 });
+
+
+for (const [width,height] of [[1440,900],[800,800],[375,740]]) {
+  test('compact filters match the input width at '+width+'px',async ({page})=>{
+    await page.setViewportSize({width,height});
+    await openFilters(page);
+    const filters=await page.locator('.ai-filters').boundingBox();
+    const composer=await page.locator('.ai-compose').boundingBox();
+    expect(Math.abs(filters.x-composer.x)).toBeLessThanOrEqual(2);
+    expect(Math.abs(filters.width-composer.width)).toBeLessThanOrEqual(2);
+    expect(composer.height).toBeLessThanOrEqual(width<=620?51:49);
+    expect(filters.x).toBeGreaterThanOrEqual(-1);
+    expect(filters.x+filters.width).toBeLessThanOrEqual(width+1);
+  });
+}

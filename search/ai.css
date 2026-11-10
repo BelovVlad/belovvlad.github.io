@@ -314,3 +314,61 @@ html.ai-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .ai-picker-trigger svg,.ai-subject-trigger svg{transition:none;}
 }
+
+/* Hyle AI compact layout, following the functional dropdown styles above */
+.ai-controls{box-sizing:border-box;width:min(780px,calc(100% - 24px));max-width:100%;margin:0 auto max(12px,env(safe-area-inset-bottom,0px))}
+.ai-compose{box-sizing:border-box;width:100%;min-height:46px;margin:0;padding:3px 5px;gap:6px;align-items:center;border-radius:15px}
+.ai-compose textarea{display:block;box-sizing:border-box;height:34px;min-height:34px;max-height:120px;margin:0;padding:6px 4px;font-size:15px;line-height:22px;flex:1;min-width:0}
+.ai-filter-toggle,.ai-send{width:38px;height:38px;align-self:center;flex:none}
+.ai-filter-toggle{padding:7px;border-radius:11px 6px 6px 11px;background:#26333e;color:var(--cream)}
+.ai-filter-toggle svg{width:20px;height:20px}
+.ai-filter-toggle:hover,.ai-filter-toggle[aria-expanded="true"]{background:#35424e;color:var(--cream)}
+.ai-send{border-radius:6px 11px 11px 6px;background:var(--cream);color:var(--bg)}
+.ai-send svg{width:18px;height:18px}
+.ai-filters{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  grid-template-areas:"heading heading heading heading heading heading"
+                      "source source semester subject subject subject"
+                      "pdf pdf pdf pdf length length";
+  align-items:end;gap:12px 10px;padding:16px;
+  max-height:min(440px,calc(var(--ai-view-height,100dvh) - 105px));
+  overflow-x:hidden;overflow-y:auto;border-radius:17px;
+  box-shadow:0 14px 36px rgba(0,0,0,.38)
+}
+.ai-filter-head{grid-area:heading;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.ai-filter-head strong{font-size:16px;line-height:1.25;font-weight:600}
+.ai-filter-actions{gap:6px}
+.ai-filter-head .ai-filter-actions button{min-height:32px;font-size:12px;line-height:1.2;padding:6px 9px;border-radius:9px}
+.ai-filter-head .ai-filter-actions [data-act="close-filters"]{padding-inline:12px}
+.ai-filters .ai-filter-field{display:flex;flex-direction:column;gap:6px;min-width:0;grid-column:auto}
+.ai-filters .ai-filter-field[data-filter="source"]{grid-area:source}
+.ai-filters .ai-filter-field[data-filter="semester"]{grid-area:semester}
+.ai-filters .ai-filter-field[data-filter="subject"]{grid-area:subject}
+.ai-filters .ai-filter-field[data-filter="pdf"]{grid-area:pdf;grid-column:auto}
+.ai-filters .ai-filter-field[data-filter="length"]{grid-area:length}
+.ai-filters .ai-filter-name{font-size:11px;line-height:1.35}
+.ai-picker-trigger,.ai-subject-control{height:40px;border-radius:10px}
+.ai-picker-trigger{font-size:14px;padding-inline:11px}
+.ai-filters .ai-subject-control input{font-size:14px;padding-left:11px}
+.ai-subject-trigger{height:38px;width:36px}
+@media(max-width:700px){
+  .ai-filters{grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-areas:"heading heading" "source source" "semester length" "subject subject" "pdf pdf";
+    gap:11px 9px;padding:14px 12px}
+}
+@media(max-width:620px){
+  .ai-controls{width:calc(100% - 16px);margin:0 auto max(8px,env(safe-area-inset-bottom,0px))}
+  .ai-compose{min-height:48px;padding:3px 4px;gap:4px;border-radius:15px}
+  .ai-compose textarea{font-size:16px;padding:6px 3px}
+  .ai-filter-toggle,.ai-send{width:40px;height:40px}
+  .ai-filter-toggle{border-radius:11px 6px 6px 11px}
+  .ai-send{border-radius:6px 11px 11px 6px}
+  .ai-filters{max-height:calc(var(--ai-view-height,100dvh) - 105px);border-radius:16px}
+  .ai-filter-head strong{font-size:15px}
+  .ai-filter-actions{gap:3px}
+  .ai-filter-head .ai-filter-actions button{font-size:11px;min-height:31px;padding:6px 7px}
+  .ai-filter-head .ai-filter-actions [data-act="close-filters"]{padding:6px 9px}
+  .ai-picker-trigger,.ai-subject-control{height:42px}
+  .ai-picker-trigger{font-size:14px;padding-inline:10px}
+  .ai-subject-trigger{height:40px}
+}
