@@ -179,6 +179,8 @@ html.ai-open{overflow:hidden}
 
 /* Unified, accessible AI search filter panel */
 .ai-controls{width:min(1060px,calc(100% - 32px));}
+/* Keep the composer at its existing 780px maximum while filters can be wider. */
+.ai-compose{width:min(780px,100%);margin-inline:auto;}
 .ai-filters{
   display:grid;grid-template-columns:1.18fr .72fr 1.12fr 1.32fr .85fr;
   align-items:end;gap:15px;padding:21px;

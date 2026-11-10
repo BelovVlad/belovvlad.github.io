@@ -61,6 +61,9 @@ test('AI remains closable after repeated document opens', async ({ page }) => {
   await expect(page.locator('#ai-button')).toBeEnabled();
   await page.locator('#ai-button').click();
   await expect(page.locator('.ai-dialog')).toBeVisible();
+  // Wait for the lazy-loaded renderer before injecting synthetic PDF links;
+  // its initial render replaces .ai-messages children asynchronously.
+  await page.evaluate(() => import('/search/ai-renderer.js'));
   for (let i = 0; i < 3; i++) {
     await page.evaluate(() => {
       const a=document.createElement('a');
