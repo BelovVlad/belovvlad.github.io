@@ -56,6 +56,16 @@ function init() {
         <label>Источник<select id="ai-source"><option value="">Все материалы</option><option value="helper">Хелпер ФФ</option><option value="nsu-y4s1">НГУ · 4 курс, 1 семестр</option><option value="department">Кафедра</option></select></label>
         <label>Семестр<select id="ai-semester"><option value="">Все</option>${Array.from({length:8}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>
         <label>Предмет<input id="ai-subject" placeholder="Все предметы" aria-label="Название предмета"></label>
+        <label>Обработка PDF<select id="ai-pdf-mode" aria-label="Обработка PDF">
+          <option value="auto">Авто — скан при ошибках OCR</option>
+          <option value="text">Только OCR — быстрее</option>
+          <option value="vision">Проверить скан — точнее</option>
+        </select></label>
+        <label>Длина ответа<select id="ai-answer-length" aria-label="Длина ответа">
+          <option value="short">Кратко</option>
+          <option value="normal">Обычно</option>
+          <option value="detailed">Подробно</option>
+        </select></label>
       </section>
       <form class="ai-compose" id="ai-compose">
         <button class="ai-filter-toggle" type="button" data-act="filters" aria-label="Фильтры поиска" aria-controls="ai-filters" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h2m4 0h10"/><circle cx="14" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span class="ai-filter-count" hidden></span></button>
@@ -255,6 +265,14 @@ function init() {
   const find = id => dialogs.find(d => d.id === id);
   function persist() { dialogs = dialogs.filter(d => d.messages.length).sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 60); save(STORE, dialogs); }
   const sourceFilter = layer.querySelector('#ai-source'), semesterFilter = layer.querySelector('#ai-semester'), subjectFilter = layer.querySelector('#ai-subject');
+  const pdfModeFilter = layer.querySelector('#ai-pdf-mode'), answerLengthFilter = layer.querySelector('#ai-answer-length');
+  const AI_PREFS = 'hyle.ai.preferences.v1';
+  const prefs = load(AI_PREFS, {});
+  pdfModeFilter.value = ['auto', 'text', 'vision'].includes(prefs.pdf_mode) ? prefs.pdf_mode : 'auto';
+  answerLengthFilter.value = ['short', 'normal', 'detailed'].includes(prefs.answer_length) ? prefs.answer_length : 'short';
+  const savePrefs = () => save(AI_PREFS, {
+    pdf_mode: pdfModeFilter.value, answer_length: answerLengthFilter.value
+  });
   function scopeNow() { return { site: sourceFilter.value, semester: semesterFilter.value, subject: subjectFilter.value.trim() }; }
   function updateFilterBadge() {
     const scope = scopeNow(), count = [scope.site, scope.semester, scope.subject].filter(Boolean).length;
@@ -263,7 +281,7 @@ function init() {
     filterToggle.setAttribute('aria-label', count ? `Фильтры поиска: активно ${count}` : 'Фильтры поиска');
   }
   filters.addEventListener('input', updateFilterBadge);
-  filters.addEventListener('change', updateFilterBadge);
+  filters.addEventListener('change', () => { updateFilterBadge(); savePrefs(); });
   function prepare() {
     showHead(true); toggleFilters(false);
     const scope = window.HyleAIScope?.() || {};
@@ -354,7 +372,9 @@ function init() {
       const response = await fetch(API + '/ask', {
         method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Authorization: bearerAuthorization(key) },
-        body: JSON.stringify({ q: question, history, ...(scope.site ? { site: scope.site } : {}), ...(scope.semester ? { semester: scope.semester } : {}), ...(scope.subject ? { subject: scope.subject } : {}) }),
+        body: JSON.stringify({ q: question, history,
+          pdf_mode: pdfModeFilter.value, answer_length: answerLengthFilter.value,
+          ...(scope.site ? { site: scope.site } : {}), ...(scope.semester ? { semester: scope.semester } : {}), ...(scope.subject ? { subject: scope.subject } : {}) }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -409,7 +429,10 @@ function init() {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'filters') toggleFilters(filters.hidden);
     if (act === 'close-filters') toggleFilters(false, true);
-    if (act === 'reset-filters') { sourceFilter.value = ''; semesterFilter.value = ''; subjectFilter.value = ''; updateFilterBadge(); }
+    if (act === 'reset-filters') {
+      sourceFilter.value = ''; semesterFilter.value = ''; subjectFilter.value = '';
+      pdfModeFilter.value = 'auto'; answerLengthFilter.value = 'short'; savePrefs(); updateFilterBadge();
+    }
     if (act === 'show-head') showHead(true);
     if (act === 'close') close();
     if (act === 'new') { abort?.abort(); newDialog(); field.focus(); }
