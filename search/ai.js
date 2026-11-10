@@ -52,20 +52,20 @@ function init() {
       <div class="ai-messages" id="ai-messages" aria-live="polite"></div>
       <div class="ai-controls">
       <section class="ai-filters" id="ai-filters" aria-label="Область поиска ИИ" hidden>
-        <div class="ai-filter-head"><strong>Где искать</strong><button type="button" data-act="reset-filters">Сбросить</button><button type="button" data-act="close-filters" aria-label="Закрыть фильтры">Готово</button></div>
-        <label>Источник<select id="ai-source"><option value="">Все материалы</option><option value="helper">Хелпер ФФ</option><option value="nsu-y4s1">НГУ · 4 курс, 1 семестр</option><option value="department">Кафедра</option></select></label>
-        <label>Семестр<select id="ai-semester"><option value="">Все</option>${Array.from({length:8}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>
-        <label>Предмет<input id="ai-subject" placeholder="Все предметы" aria-label="Название предмета"></label>
-        <label>Обработка PDF<select id="ai-pdf-mode" aria-label="Обработка PDF">
+        <div class="ai-filter-head"><strong>Где искать</strong><div class="ai-filter-actions"><button type="button" data-act="reset-filters">↺ Сбросить</button><button type="button" data-act="close-filters" aria-label="Закрыть фильтры">✓ Готово</button></div></div>
+        <div class="ai-filter-field" data-filter="source"><span class="ai-filter-name" id="ai-source-label">Источник</span><select id="ai-source"><option value="">Все материалы</option><option value="helper">Хелпер ФФ</option><option value="nsu-y4s1">НГУ · 4 курс, 1 семестр</option><option value="department">Кафедра</option></select></div>
+        <div class="ai-filter-field" data-filter="semester"><span class="ai-filter-name" id="ai-semester-label">Семестр</span><select id="ai-semester"><option value="">Все</option>${Array.from({length:8}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></div>
+        <div class="ai-filter-field" data-filter="subject"><label class="ai-filter-name" for="ai-subject">Предмет</label><div class="ai-subject-control"><input id="ai-subject" placeholder="Все предметы" aria-label="Название предмета" autocomplete="off"><button type="button" class="ai-subject-trigger ai-choice-trigger" aria-label="Выбрать предмет из списка" aria-haspopup="listbox" aria-controls="ai-choice-list" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 9 7 7 7-7"/></svg></button></div></div>
+        <div class="ai-filter-field" data-filter="pdf"><span class="ai-filter-name" id="ai-pdf-mode-label">Обработка PDF</span><select id="ai-pdf-mode" aria-label="Обработка PDF">
           <option value="auto">Авто — скан при ошибках OCR</option>
           <option value="text">Только OCR — быстрее</option>
           <option value="vision">Проверить скан — точнее</option>
-        </select></label>
-        <label>Длина ответа<select id="ai-answer-length" aria-label="Длина ответа">
+        </select></div>
+        <div class="ai-filter-field" data-filter="length"><span class="ai-filter-name" id="ai-answer-length-label">Длина ответа</span><select id="ai-answer-length" aria-label="Длина ответа">
           <option value="short">Кратко</option>
           <option value="normal">Обычно</option>
           <option value="detailed">Подробно</option>
-        </select></label>
+        </select></div>
       </section>
       <form class="ai-compose" id="ai-compose">
         <button class="ai-filter-toggle" type="button" data-act="filters" aria-label="Фильтры поиска" aria-controls="ai-filters" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h2m4 0h10"/><circle cx="14" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span class="ai-filter-count" hidden></span></button>
@@ -91,11 +91,186 @@ function init() {
   const ctx = frameCanvas.getContext('2d');
   const filters = layer.querySelector('#ai-filters'), filterToggle = layer.querySelector('.ai-filter-toggle');
   const head = layer.querySelector('.ai-head-wrap'), revealHead = layer.querySelector('.ai-head-reveal');
+
+  // Render a custom, keyboard-accessible menu while preserving the original
+  // <select> elements, their values and the /ask API payload.
+  const choiceLayer = document.createElement('div');
+  choiceLayer.className = 'ai-choice-layer';
+  choiceLayer.hidden = true;
+  choiceLayer.innerHTML = '<button class="ai-choice-backdrop" type="button" aria-label="Закрыть список"></button><div class="ai-choice-panel"><div class="ai-choice-head"><strong id="ai-choice-title"></strong><button type="button" class="ai-choice-close">Закрыть</button></div><div class="ai-choice-list" id="ai-choice-list" role="listbox"></div></div>';
+  dialog.append(choiceLayer);
+  const choicePanel = choiceLayer.querySelector('.ai-choice-panel');
+  const choiceList = choiceLayer.querySelector('.ai-choice-list');
+  const pickerDisplays = new Map();
+  let activeChoice = null;
+  const suggestedSubjects = [
+    'Математический анализ', 'Методы математической физики',
+    'Квантовая механика', 'Термодинамика', 'Оптика',
+    'Электродинамика', 'Статистическая физика', 'Теория поля'
+  ];
+  function refreshPickerDisplays() {
+    for (const {select,display,trigger} of pickerDisplays.values()) {
+      display.textContent = select.selectedOptions[0]?.textContent || 'Все';
+      trigger.title = display.textContent;
+    }
+  }
+  function closeChoice(restoreFocus = false) {
+    if (!activeChoice) return;
+    const trigger = activeChoice.trigger;
+    trigger.setAttribute('aria-expanded','false');
+    activeChoice = null;
+    choiceLayer.hidden = true;
+    choiceLayer.classList.remove('ai-choice-mobile');
+    choicePanel.removeAttribute('style');
+    if (restoreFocus) trigger.focus({preventScroll:true});
+  }
+  function positionChoice() {
+    if (!activeChoice || choiceLayer.hidden) return;
+    if (matchMedia('(max-width:620px)').matches) {
+      choiceLayer.classList.add('ai-choice-mobile');
+      choicePanel.removeAttribute('style');
+      choiceList.style.maxHeight = '';
+      return;
+    }
+    choiceLayer.classList.remove('ai-choice-mobile');
+    const viewport = dialog.getBoundingClientRect();
+    const target = activeChoice.trigger.getBoundingClientRect();
+    const width = Math.min(Math.max(230,target.width),viewport.width-24);
+    const needed = Math.min(322,activeChoice.count*44+16);
+    const below = viewport.bottom-target.bottom-12;
+    const above = target.top-viewport.top-12;
+    const upwards = below < Math.min(needed,190) && above > below;
+    const allowed = Math.max(90,Math.min(needed,upwards?above:below));
+    const x = Math.max(12,Math.min(target.left-viewport.left,viewport.width-width-12));
+    const y = upwards ? target.top-viewport.top-allowed-7 : target.bottom-viewport.top+7;
+    choicePanel.style.left = x+'px';
+    choicePanel.style.top = Math.max(8,y)+'px';
+    choicePanel.style.width = width+'px';
+    choicePanel.style.maxHeight = allowed+'px';
+    choiceList.style.maxHeight = Math.max(70,allowed-14)+'px';
+  }
+  function openChoice(trigger, select, subject = false) {
+    if (activeChoice?.trigger === trigger) { closeChoice(true); return; }
+    closeChoice();
+    const entries = subject
+      ? [{value:'',label:'Все предметы'},
+         ...suggestedSubjects.map(value=>({value,label:value})),
+         {value:'__custom__',label:'Ввести вручную…'}]
+      : [...select.options].map(option=>({value:option.value,label:option.textContent}));
+    const selected = subject ? subjectFilter.value.trim() : select.value;
+    const title = subject ? 'Предмет' : trigger.closest('.ai-filter-field').querySelector('.ai-filter-name').textContent;
+    choiceLayer.querySelector('#ai-choice-title').textContent = title;
+    choiceList.setAttribute('aria-label',title);
+    choiceList.replaceChildren();
+    entries.forEach(entry=>{
+      const option = document.createElement('button');
+      option.type='button';
+      option.className='ai-choice-option';
+      option.setAttribute('role','option');
+      const checked = entry.value === selected;
+      option.setAttribute('aria-selected',String(checked));
+      if(checked)option.classList.add('selected');
+      const label = document.createElement('span');
+      label.textContent = entry.label;
+      const mark = document.createElement('span');
+      mark.className='ai-choice-mark';
+      mark.setAttribute('aria-hidden','true');
+      mark.textContent = checked ? '✓' : '';
+      option.append(label,mark);
+      option.addEventListener('click',()=>{
+        if(subject) {
+          if(entry.value === '__custom__') {
+            closeChoice();
+            subjectFilter.focus({preventScroll:true});
+            subjectFilter.select();
+            return;
+          }
+          subjectFilter.value=entry.value;
+          subjectFilter.dispatchEvent(new Event('input',{bubbles:true}));
+          subjectFilter.dispatchEvent(new Event('change',{bubbles:true}));
+        } else {
+          select.value=entry.value;
+          select.dispatchEvent(new Event('change',{bubbles:true}));
+          refreshPickerDisplays();
+        }
+        closeChoice(true);
+      });
+      choiceList.append(option);
+    });
+    activeChoice = {trigger,count:entries.length};
+    trigger.setAttribute('aria-expanded','true');
+    choiceLayer.hidden=false;
+    positionChoice();
+    (choiceList.querySelector('.selected')||choiceList.querySelector('.ai-choice-option'))?.focus({preventScroll:true});
+  }
+  function installChoices() {
+    const picks = [
+      ['ai-source','ai-source-label'], ['ai-semester','ai-semester-label'],
+      ['ai-pdf-mode','ai-pdf-mode-label'], ['ai-answer-length','ai-answer-length-label']
+    ];
+    for(const [id,labelId] of picks){
+      const select=layer.querySelector('#'+id);
+      const wrap=document.createElement('div');
+      wrap.className='ai-picker';
+      select.before(wrap);
+      wrap.append(select);
+      select.classList.add('ai-picker-native');
+      select.tabIndex=-1;
+      select.setAttribute('aria-hidden','true');
+      const trigger=document.createElement('button');
+      trigger.type='button';
+      trigger.className='ai-picker-trigger ai-choice-trigger';
+      trigger.setAttribute('aria-haspopup','listbox');
+      trigger.setAttribute('aria-expanded','false');
+      trigger.setAttribute('aria-controls','ai-choice-list');
+      const display=document.createElement('span');
+      display.className='ai-picker-value';
+      display.id=id+'-value';
+      trigger.setAttribute('aria-labelledby',labelId+' '+display.id);
+      trigger.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 9 7 7 7-7"/></svg>';
+      trigger.prepend(display);
+      wrap.append(trigger);
+      pickerDisplays.set(id,{select,display,trigger});
+      trigger.addEventListener('click',()=>openChoice(trigger,select));
+      trigger.addEventListener('keydown',e=>{
+        if(e.key==='ArrowDown'||e.key==='ArrowUp'||e.key===' '){
+          e.preventDefault();
+          if(!activeChoice)openChoice(trigger,select);
+        }
+      });
+    }
+    const subjectTrigger=layer.querySelector('.ai-subject-trigger');
+    subjectTrigger.addEventListener('click',()=>openChoice(subjectTrigger,null,true));
+    subjectTrigger.addEventListener('keydown',e=>{
+      if((e.key==='ArrowDown'||e.key==='ArrowUp')&&!activeChoice){
+        e.preventDefault();openChoice(subjectTrigger,null,true);
+      }
+    });
+    refreshPickerDisplays();
+  }
+  choiceLayer.querySelector('.ai-choice-backdrop').addEventListener('click',()=>closeChoice(true));
+  choiceLayer.querySelector('.ai-choice-close').addEventListener('click',()=>closeChoice(true));
+  choiceList.addEventListener('keydown',e=>{
+    const choices=[...choiceList.querySelectorAll('.ai-choice-option')];
+    const index=choices.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      choices[(index+(e.key==='ArrowDown'?1:-1)+choices.length)%choices.length]?.focus();
+    } else if(e.key==='Home'||e.key==='End'){
+      e.preventDefault();choices[e.key==='Home'?0:choices.length-1]?.focus();
+    }
+  });
+  layer.addEventListener('pointerdown',e=>{
+    if(activeChoice && !choiceLayer.contains(e.target) && !e.target.closest('.ai-choice-trigger'))closeChoice();
+  },true);
   function toggleFilters(open, restoreFocus = false) {
+    if(!open)closeChoice();
     filters.hidden = !open;
     filterToggle.setAttribute('aria-expanded', String(open));
-    if (open) { sheet.hidden = true; filters.querySelector('select').focus({preventScroll:true}); }
-    else if (restoreFocus) filterToggle.focus({preventScroll:true});
+    if (open) {
+      sheet.hidden = true;
+      layer.querySelector('.ai-picker-trigger')?.focus({preventScroll:true});
+    } else if (restoreFocus) filterToggle.focus({preventScroll:true});
   }
   let scrollIntent = 0, previousScroll = 0, scrollTravel = 0, headerSettling = 0;
   function showHead(show) {
@@ -257,7 +432,7 @@ function init() {
   addEventListener('pointermove', e => { if (start && state === 'hold' && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 12) release(); }, { passive: true });
   box.addEventListener('contextmenu', e => { if (state === 'hold' || state === 'opening') e.preventDefault(); });
   button?.addEventListener('click', e => { e.preventDefault(); begin(true); });
-  layer.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); if (!filters.hidden) toggleFilters(false, true); else if (!sheet.hidden) sheet.hidden = true; else close(); } });
+  layer.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); if (activeChoice) closeChoice(true); else if (!filters.hidden) toggleFilters(false, true); else if (!sheet.hidden) sheet.hidden = true; else close(); } });
 
   // ---------- dialogs, kept in this browser
   let dialogs = load(STORE, []), currentId = null, abort = null;
@@ -273,6 +448,7 @@ function init() {
   const savePrefs = () => save(AI_PREFS, {
     pdf_mode: pdfModeFilter.value, answer_length: answerLengthFilter.value
   });
+  installChoices();
   function scopeNow() { return { site: sourceFilter.value, semester: semesterFilter.value, subject: subjectFilter.value.trim() }; }
   function updateFilterBadge() {
     const scope = scopeNow(), count = [scope.site, scope.semester, scope.subject].filter(Boolean).length;
@@ -293,6 +469,7 @@ function init() {
     }
     if (scope.semester != null) semesterFilter.value = scope.semester;
     if (scope.subject != null) subjectFilter.value = scope.subject;
+    refreshPickerDisplays();
     updateFilterBadge();
     layer.querySelector('#ai-scope').textContent = 'ИИ · Helper, НГУ и кафедра';
     if (pending || !currentId || !find(currentId)) newDialog(); else renderDialog();
@@ -431,7 +608,7 @@ function init() {
     if (act === 'close-filters') toggleFilters(false, true);
     if (act === 'reset-filters') {
       sourceFilter.value = ''; semesterFilter.value = ''; subjectFilter.value = '';
-      pdfModeFilter.value = 'auto'; answerLengthFilter.value = 'short'; savePrefs(); updateFilterBadge();
+      pdfModeFilter.value = 'auto'; answerLengthFilter.value = 'short'; savePrefs(); refreshPickerDisplays(); updateFilterBadge();
     }
     if (act === 'show-head') showHead(true);
     if (act === 'close') close();
@@ -449,11 +626,11 @@ function init() {
     const del = e.target.closest('[data-delete]');
     if (del) { dialogs = dialogs.filter(d => d.id !== del.dataset.delete); persist(); if (currentId === del.dataset.delete) newDialog(); renderSheet(); }
     if (e.target === sheet) sheet.hidden = true;
-    if (!filters.hidden && !e.target.closest('.ai-controls')) toggleFilters(false);
+    if (!filters.hidden && !e.target.closest('.ai-controls') && !e.target.closest('.ai-choice-layer')) toggleFilters(false);
   });
   function renderSheet() {
     const when = iso => new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     sheetList.innerHTML = dialogs.length ? dialogs.map(d => `<div class="ai-row${d.id === currentId ? ' current' : ''}"><button type="button" data-dialog="${esc(d.id)}"><span>${esc(d.title)}</span><small>${when(d.updated)} · ${d.messages.filter(m => m.role === 'user').length} вопр.</small></button><button type="button" class="ai-del" data-delete="${esc(d.id)}" aria-label="Удалить диалог">×</button></div>`).join('') : '<p class="ai-none">Пока нет сохранённых диалогов.</p>';
   }
-  addEventListener('resize', () => { if (state !== 'closed') size(); });
+  addEventListener('resize', () => { if (state !== 'closed') size(); if (activeChoice) positionChoice(); });
 }
