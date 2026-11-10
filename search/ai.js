@@ -476,7 +476,7 @@ function init() {
   }
   function afterOpen() {
     if (pending) { const q = pending; pending = ''; ask(q); }
-    else if (matchMedia('(hover:hover)').matches) field.focus();
+    else if (filters.hidden && matchMedia('(hover:hover) and (min-width:621px)').matches) field.focus({preventScroll:true});
   }
   function newDialog() { showHead(true); currentId = null; layer.querySelector('#ai-title').textContent = 'Новый вопрос'; renderDialog(); }
   function renderDialog() {
