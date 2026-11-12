@@ -120,6 +120,7 @@ function init() {
   window.visualViewport?.addEventListener('resize', queueViewport);
   window.visualViewport?.addEventListener('scroll', queueViewport);
   addEventListener('resize', queueViewport);
+  document.addEventListener('fullscreenchange', queueViewport);
 
   // ---------- the dot frame
   let W = 0, H = 0, dpr = 1;
@@ -370,8 +371,17 @@ function init() {
   }
   function keepBottom() { if (messages.scrollHeight - messages.scrollTop - messages.clientHeight < 160) messages.scrollTop = messages.scrollHeight; }
 
-  compose.addEventListener('submit', e => { e.preventDefault(); if (abort) return; const q = field.value; field.value = ''; grow(); ask(q); });
+  compose.addEventListener('submit', e => {
+    e.preventDefault();
+    const question = field.value.trim();
+    if (abort || !question) return;
+    if (matchMedia('(pointer: coarse)').matches) field.blur();
+    field.value = '';
+    grow();
+    ask(question);
+  });
   field.addEventListener('focus', queueViewport);
+  field.addEventListener('blur', queueViewport);
   field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); compose.requestSubmit(); } });
   const grow = () => {
     // Shrink after sending a multiline question, including on mobile Safari.
