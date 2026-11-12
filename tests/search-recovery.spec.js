@@ -84,3 +84,38 @@ test('AI remains closable after repeated document opens', async ({ page }) => {
   await page.getByRole('button', { name: 'Назад к поиску' }).click();
   await expect(page.locator('.ai-dialog')).toBeHidden();
 });
+
+for (const embedded of [false, true]) {
+  test(`AI composer clears the software keyboard ${embedded ? 'inside Home search' : 'on the search page'}`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 780 });
+    const search = embedded ? await openSearch(page) : page;
+    if (!embedded) await page.goto('/search/');
+    await search.locator('#ai-button').click();
+    const composer = search.locator('.ai-compose');
+    await expect(composer).toBeVisible();
+    const input = search.locator('#ai-input');
+    await input.fill('Что такое когерентность?');
+
+    // Chromium desktop has no IME. Report the same visual-viewport resize as a phone.
+    await page.evaluate(() => {
+      Object.defineProperty(window.visualViewport, 'height', { configurable: true, value: 420 });
+      window.visualViewport.dispatchEvent(new Event('resize'));
+    });
+    await expect(search.locator('.ai-layer')).toHaveClass(/ai-keyboard/);
+    await expect.poll(async () => {
+      const box = await composer.boundingBox();
+      return box.y + box.height;
+    }).toBeLessThanOrEqual(405);
+    await expect(input).toHaveValue('Что такое когерентность?');
+
+    await page.evaluate(() => {
+      delete window.visualViewport.height;
+      window.visualViewport.dispatchEvent(new Event('resize'));
+    });
+    await expect(search.locator('.ai-layer')).not.toHaveClass(/ai-keyboard/);
+    await expect.poll(async () => {
+      const box = await composer.boundingBox();
+      return box.y + box.height;
+    }).toBeGreaterThan(700);
+  });
+}
