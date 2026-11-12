@@ -130,12 +130,13 @@ html.ai-open{overflow:hidden}
 .ai-compose{margin:0;padding:6px;gap:5px}
 .ai-compose textarea{font-size:16px;padding:7px 2px}
 .ai-head-reveal:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.ai-keyboard .ai-controls{margin-bottom:4px}
+
 @media(max-width:620px){.ai-head{padding:5px 8px}.ai-title strong{font-size:15px}.ai-title span{font-size:11px}.ai-controls{margin:0 8px 8px}.ai-empty{font-size:14px;max-width:34ch}}
 @media(prefers-reduced-motion:reduce){.ai-head-wrap{transition:none}}
 
 /* Hyle AI compact composer */
 .ai-controls{box-sizing:border-box;width:min(780px,calc(100% - 24px));max-width:100%;margin:0 auto max(12px,env(safe-area-inset-bottom,0px))}
+.ai-keyboard .ai-controls{margin-bottom:max(16px,env(safe-area-inset-bottom,0px))}
 .ai-compose{box-sizing:border-box;width:100%;min-height:46px;margin:0;padding:3px 5px;gap:6px;align-items:center;border-radius:15px}
 .ai-compose textarea{display:block;box-sizing:border-box;height:34px;min-height:34px;max-height:120px;margin:0;padding:6px 4px;font-size:15px;line-height:22px;flex:1;min-width:0}
 .ai-send{width:38px;height:38px;align-self:center;flex:none}
@@ -143,6 +144,7 @@ html.ai-open{overflow:hidden}
 .ai-send svg{width:18px;height:18px}
 @media(max-width:620px){
   .ai-controls{width:calc(100% - 16px);margin:0 auto max(8px,env(safe-area-inset-bottom,0px))}
+  .ai-controls:focus-within{margin-bottom:max(16px,env(safe-area-inset-bottom,0px))}
   .ai-compose{min-height:48px;padding:3px 4px;gap:4px;border-radius:15px}
   .ai-compose textarea{font-size:16px;padding:6px 3px}
   .ai-send{width:40px;height:40px}
