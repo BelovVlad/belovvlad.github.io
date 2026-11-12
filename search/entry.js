@@ -18,7 +18,7 @@ if(input) {
       const back=document.createElement('button');back.type='button';back.textContent='← Назад';back.style.cssText='background:none;border:1px solid #25303a;border-radius:10px;color:inherit;padding:10px 16px;cursor:pointer';back.onclick=()=>close();
       const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Открываю поиск…';loading.append(back,status);
       frame=document.createElement('iframe');frame.title='Общий поиск Hyle';frame.style.cssText='display:block;visibility:hidden;width:100%;height:100%;border:0;color-scheme:dark';
-      frame.src='/search/?'+new URLSearchParams({from:source,ui:'6'});overlay.append(loading,frame);document.body.append(overlay);
+      frame.src='/search/?'+new URLSearchParams({from:source,ui:'7'});overlay.append(loading,frame);document.body.append(overlay);
     }
   }
   function syncViewport() {
@@ -112,18 +112,18 @@ if(input) {
       }
     }
     if(event.data?.type==='hyle-search-ai-open'){
-      // AI is a nested view, not another browser-history entry.
-      if(opened&&history.state?.hyleSearchOverlay)
-        history.replaceState({...history.state,hyleSearchAi:true},'');
+      if(!opened||aiOpen)return;
+      if(history.state?.hyleSearchOverlay&&!history.state.hyleSearchAi)
+        history.pushState({...history.state,hyleSearchAi:true},'');
       aiOpen=true;
     }
     if(event.data?.type==='hyle-search-ai-close-request'){
-      aiOpen=false;
       if(history.state?.hyleSearchAi){
-        const next={...history.state};delete next.hyleSearchAi;
-        history.replaceState(next,'');
+        history.back();
+      }else{
+        aiOpen=false;
+        frame.contentWindow.postMessage({type:'hyle-search-ai-close'},location.origin);
       }
-      frame.contentWindow.postMessage({type:'hyle-search-ai-close'},location.origin);
     }
   });
   window.addEventListener('popstate',event=>{
