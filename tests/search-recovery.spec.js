@@ -172,13 +172,13 @@ test('system Back goes from citation to chat, search, then Home', async ({ page 
   await expect(reader).toBeVisible();
   await expect(search.frameLocator('.hyle-reader-frame').getByText('PDF preview')).toBeVisible();
 
-  await page.goBack();
+  await page.evaluate(() => history.back());
   await expect(reader).toBeHidden();
   await expect(search.locator('.ai-dialog')).toBeVisible();
-  await page.goBack();
+  await page.evaluate(() => history.back());
   await expect(search.locator('.ai-dialog')).toBeHidden();
   await expect(search.locator('.search-field')).toBeVisible();
-  await page.goBack();
+  await page.evaluate(() => history.back());
   await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
   await expect(page.locator('#search')).toBeVisible();
 });
