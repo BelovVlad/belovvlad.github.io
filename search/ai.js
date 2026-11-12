@@ -56,11 +56,6 @@ function init() {
         <div class="ai-filter-field" data-filter="source"><span class="ai-filter-name" id="ai-source-label">Источник</span><select id="ai-source"><option value="">Все материалы</option><option value="helper">Хелпер ФФ</option><option value="nsu-y4s1">НГУ · 4 курс, 1 семестр</option><option value="department">Кафедра</option></select></div>
         <div class="ai-filter-field" data-filter="semester"><span class="ai-filter-name" id="ai-semester-label">Семестр</span><select id="ai-semester"><option value="">Все</option>${Array.from({length:8}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></div>
         <div class="ai-filter-field" data-filter="subject"><label class="ai-filter-name" for="ai-subject">Предмет</label><div class="ai-subject-control"><input id="ai-subject" placeholder="Все предметы" aria-label="Название предмета" autocomplete="off"><button type="button" class="ai-subject-trigger ai-choice-trigger" aria-label="Выбрать предмет из списка" aria-haspopup="listbox" aria-controls="ai-choice-list" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 9 7 7 7-7"/></svg></button></div></div>
-        <div class="ai-filter-field" data-filter="pdf"><span class="ai-filter-name" id="ai-pdf-mode-label">Обработка PDF</span><select id="ai-pdf-mode" aria-label="Обработка PDF">
-          <option value="auto">Авто — скан при ошибках OCR</option>
-          <option value="text">Только OCR — быстрее</option>
-          <option value="vision">Проверить скан — точнее</option>
-        </select></div>
       </section>
       <form class="ai-compose" id="ai-compose">
         <button class="ai-filter-toggle" type="button" data-act="filters" aria-label="Фильтры поиска" aria-controls="ai-filters" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h2m4 0h10"/><circle cx="14" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span class="ai-filter-count" hidden></span></button>
@@ -200,8 +195,7 @@ function init() {
   }
   function installChoices() {
     const picks = [
-      ['ai-source','ai-source-label'], ['ai-semester','ai-semester-label'],
-      ['ai-pdf-mode','ai-pdf-mode-label']
+      ['ai-source','ai-source-label'], ['ai-semester','ai-semester-label']
     ];
     for(const [id,labelId] of picks){
       const select=layer.querySelector('#'+id);
@@ -435,13 +429,6 @@ function init() {
   const find = id => dialogs.find(d => d.id === id);
   function persist() { dialogs = dialogs.filter(d => d.messages.length).sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 60); save(STORE, dialogs); }
   const sourceFilter = layer.querySelector('#ai-source'), semesterFilter = layer.querySelector('#ai-semester'), subjectFilter = layer.querySelector('#ai-subject');
-  const pdfModeFilter = layer.querySelector('#ai-pdf-mode');
-  const AI_PREFS = 'hyle.ai.preferences.v1';
-  const prefs = load(AI_PREFS, {});
-  pdfModeFilter.value = ['auto', 'text', 'vision'].includes(prefs.pdf_mode) ? prefs.pdf_mode : 'auto';
-  const savePrefs = () => save(AI_PREFS, {
-    pdf_mode: pdfModeFilter.value
-  });
   installChoices();
   function scopeNow() { return { site: sourceFilter.value, semester: semesterFilter.value, subject: subjectFilter.value.trim() }; }
   function updateFilterBadge() {
@@ -451,7 +438,7 @@ function init() {
     filterToggle.setAttribute('aria-label', count ? `Фильтры поиска: активно ${count}` : 'Фильтры поиска');
   }
   filters.addEventListener('input', updateFilterBadge);
-  filters.addEventListener('change', () => { updateFilterBadge(); savePrefs(); });
+  filters.addEventListener('change', updateFilterBadge);
   function prepare() {
     showHead(true); toggleFilters(false);
     const scope = window.HyleAIScope?.() || {};
@@ -544,7 +531,7 @@ function init() {
         method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Authorization: bearerAuthorization(key) },
         body: JSON.stringify({ q: question, history,
-          pdf_mode: pdfModeFilter.value, answer_length: 'normal',
+          pdf_mode: 'auto', answer_length: 'normal',
           ...(scope.site ? { site: scope.site } : {}), ...(scope.semester ? { semester: scope.semester } : {}), ...(scope.subject ? { subject: scope.subject } : {}) }),
       });
       if (!response.ok) {
@@ -602,7 +589,7 @@ function init() {
     if (act === 'close-filters') toggleFilters(false, true);
     if (act === 'reset-filters') {
       sourceFilter.value = ''; semesterFilter.value = ''; subjectFilter.value = '';
-      pdfModeFilter.value = 'auto'; savePrefs(); refreshPickerDisplays(); updateFilterBadge();
+      refreshPickerDisplays(); updateFilterBadge();
     }
     if (act === 'show-head') showHead(true);
     if (act === 'close') close();
