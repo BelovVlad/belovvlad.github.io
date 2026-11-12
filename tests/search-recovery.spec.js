@@ -119,3 +119,33 @@ for (const embedded of [false, true]) {
     }).toBeGreaterThan(700);
   });
 }
+
+test.describe('touch chat in the fullscreen app', () => {
+  test.use({ viewport: { width: 375, height: 780 }, hasTouch: true, isMobile: true });
+
+  test('resizes for the keyboard and dismisses it on send', async ({ page }) => {
+    await page.addInitScript(() => {
+      const original = window.matchMedia.bind(window);
+      window.matchMedia = query => query.includes('(display-mode: fullscreen)')
+        ? Object.defineProperty(original(query), 'matches', { value: true })
+        : original(query);
+    });
+    const frame = await openSearch(page);
+    await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /interactive-widget=resizes-content/);
+    await expect(frame.locator('meta[name="viewport"]')).toHaveAttribute('content', /interactive-widget=resizes-content/);
+    await frame.locator('#ai-button').click();
+    const input = frame.locator('#ai-input');
+    await input.fill('Что такое когерентность?');
+    await expect(input).toBeFocused();
+
+    // Android resizes the layout viewport in resizes-content mode.
+    await page.setViewportSize({ width: 375, height: 420 });
+    await expect.poll(async () => {
+      const box = await frame.locator('.ai-compose').boundingBox();
+      return box.y + box.height;
+    }).toBeLessThanOrEqual(405);
+    await input.press('Enter');
+    await expect(input).not.toBeFocused();
+    await expect(input).toHaveValue('');
+  });
+});
