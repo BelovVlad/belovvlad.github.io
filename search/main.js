@@ -18,13 +18,8 @@ try {
   document.querySelector('.search-field').id='searchbox';
   document.querySelector('input[type="search"]').id='search';
   document.querySelector('[data-action="ai"]').id='ai-button';
-  window.HyleAIScope=()=>{
-    const s=app.getState();
-    const selected = s.sources.filter(id => ['helper','department','nsu'].includes(id)).map(id => id === 'nsu' ? 'nsu-y4s1' : id);
-    return { site: selected.length === 3 ? '' : selected.join('|') || '__none__', subject:s.subject, semester:s.semester };
-  };
   const aiButton = document.querySelector('#ai-button'); aiButton.disabled = true;
-  void import('./ai.js?v=9').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
+  void import('./ai.js?v=10').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin || event.source!==parent)return;
     if(event.data?.type==='hyle-search-open')app.open(event.data.query);
