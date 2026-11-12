@@ -19,7 +19,7 @@ try {
   document.querySelector('input[type="search"]').id='search';
   document.querySelector('[data-action="ai"]').id='ai-button';
   const aiButton = document.querySelector('#ai-button'); aiButton.disabled = true;
-  void import('./ai.js?v=10').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
+  void import('./ai.js?v=11').then(() => { aiButton.disabled = false; }).catch(() => { aiButton.title = 'Не удалось загрузить ИИ. Обновите страницу.'; });
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin || event.source!==parent)return;
     if(event.data?.type==='hyle-search-open')app.open(event.data.query);
