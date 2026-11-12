@@ -149,3 +149,36 @@ test.describe('touch chat in the fullscreen app', () => {
     await expect(input).toHaveValue('');
   });
 });
+
+test('system Back goes from citation to chat, search, then Home', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 780 });
+  await page.route('https://hyle.space/NSU_FP_Y4_S1/docs/pdfjs/viewer.html**', route =>
+    route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>PDF</title><p>PDF preview</p>' }));
+  const search = await openSearch(page);
+  await search.locator('#ai-button').click();
+  await expect(search.locator('.ai-dialog')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => history.state?.hyleSearchAi)).toBe(true);
+  await search.locator('.ai-dialog').evaluate(async dialog => {
+    await import('/search/ai-renderer.js');
+    const message = dialog.querySelector('.ai-messages');
+    message.classList.add('ai-text');
+    const link = document.createElement('a');
+    link.href = 'https://hyle.space/NSU_FP_Y4_S1/docs/pdfjs/viewer.html?file=test.pdf&page=15';
+    link.textContent = 'Цитата PDF';
+    message.append(link);
+  });
+  await search.getByRole('link', { name: 'Цитата PDF' }).click();
+  const reader = search.locator('.hyle-reader-overlay');
+  await expect(reader).toBeVisible();
+  await expect(search.frameLocator('.hyle-reader-frame').getByText('PDF preview')).toBeVisible();
+
+  await page.goBack();
+  await expect(reader).toBeHidden();
+  await expect(search.locator('.ai-dialog')).toBeVisible();
+  await page.goBack();
+  await expect(search.locator('.ai-dialog')).toBeHidden();
+  await expect(search.locator('.search-field')).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('iframe[title="Общий поиск Hyle"]')).toBeHidden();
+  await expect(page.locator('#search')).toBeVisible();
+});
