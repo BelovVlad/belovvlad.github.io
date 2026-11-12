@@ -1,14 +1,14 @@
 import { test, expect } from '@playwright/test';
 import defaults from '../config.js';
 
-test('the existing app identity launches in fullscreen display mode', async ({ request }) => {
+test('the existing app identity launches in standalone display mode', async ({ request }) => {
   const response = await request.get('/manifest.webmanifest');
   expect(response.ok()).toBe(true);
   const manifest = await response.json();
   expect(manifest.id).toBe('/');
   expect(manifest.start_url).toBe('./');
   expect(manifest.scope).toBe('./');
-  expect(manifest.display).toBe('fullscreen');
+  expect(manifest.display).toBe('standalone');
 });
 
 for (const mode of ['fullscreen', 'standalone']) {
