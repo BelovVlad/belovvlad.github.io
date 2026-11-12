@@ -274,7 +274,7 @@ html.ai-open{overflow:hidden}
   .ai-controls{width:calc(100% - 16px);}
   .ai-filters{
     grid-template-columns:repeat(2,minmax(0,1fr));
-    grid-template-areas:"heading heading" "source source" "semester length" "subject subject" "pdf pdf";
+    grid-template-areas:"heading heading" "source semester" "subject subject" "pdf pdf";
     gap:12px 10px;padding:16px 13px;max-height:calc(var(--ai-view-height,100dvh) - 108px);
     border-radius:19px;
   }
@@ -287,7 +287,6 @@ html.ai-open{overflow:hidden}
   .ai-filter-field[data-filter="semester"]{grid-area:semester;}
   .ai-filter-field[data-filter="subject"]{grid-area:subject;}
   .ai-filter-field[data-filter="pdf"]{grid-area:pdf;grid-column:auto;}
-  .ai-filter-field[data-filter="length"]{grid-area:length;}
   .ai-filter-field{gap:6px;}
   .ai-picker-trigger,.ai-subject-control{height:44px;border-radius:11px;}
   .ai-picker-trigger{font-size:15px;padding-inline:11px;}
@@ -329,7 +328,7 @@ html.ai-open{overflow:hidden}
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
   grid-template-areas:"heading heading heading heading heading heading"
                       "source source semester subject subject subject"
-                      "pdf pdf pdf pdf length length";
+                      "pdf pdf pdf pdf pdf pdf";
   align-items:end;gap:12px 10px;padding:16px;
   max-height:min(440px,calc(var(--ai-view-height,100dvh) - 105px));
   overflow-x:hidden;overflow-y:auto;border-radius:17px;
@@ -345,7 +344,6 @@ html.ai-open{overflow:hidden}
 .ai-filters .ai-filter-field[data-filter="semester"]{grid-area:semester}
 .ai-filters .ai-filter-field[data-filter="subject"]{grid-area:subject}
 .ai-filters .ai-filter-field[data-filter="pdf"]{grid-area:pdf;grid-column:auto}
-.ai-filters .ai-filter-field[data-filter="length"]{grid-area:length}
 .ai-filters .ai-filter-name{font-size:11px;line-height:1.35}
 .ai-picker-trigger,.ai-subject-control{height:40px;border-radius:10px}
 .ai-picker-trigger{font-size:14px;padding-inline:11px}
@@ -353,7 +351,7 @@ html.ai-open{overflow:hidden}
 .ai-subject-trigger{height:38px;width:36px}
 @media(max-width:700px){
   .ai-filters{grid-template-columns:repeat(2,minmax(0,1fr));
-    grid-template-areas:"heading heading" "source source" "semester length" "subject subject" "pdf pdf";
+    grid-template-areas:"heading heading" "source semester" "subject subject" "pdf pdf";
     gap:11px 9px;padding:14px 12px}
 }
 @media(max-width:620px){
