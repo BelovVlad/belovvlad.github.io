@@ -92,8 +92,14 @@ function init() {
     // No auto-hidden header that can strand the user inside AI.
     if (scrollTravel < -14) showHead(true);
   }, {passive:true});
-  // The parent search overlay sizes its iframe to the TOP-LEVEL visual viewport.
-  // Direct site dialogs follow their own viewport, including keyboard resize and pan.
+  // The iframe is already resized by the search overlay. Keyboard detection
+  // needs the outer viewport, because the iframe's two heights shrink together.
+  let outerWindow = window;
+  try {
+    if (parent.location.origin === location.origin) outerWindow = parent;
+  } catch {
+    // A cross-origin embed can only measure its own viewport.
+  }
   let viewportFrame = 0;
   function syncViewport() {
     viewportFrame = 0;
@@ -105,7 +111,9 @@ function init() {
     layer.style.width = (v?.width || innerWidth) + 'px';
     layer.style.height = height + 'px';
     layer.style.setProperty('--ai-view-height', height + 'px');
-    layer.classList.toggle('ai-keyboard', innerHeight - height > 120);
+    const outerViewport = outerWindow.visualViewport;
+    layer.classList.toggle('ai-keyboard',
+      !!outerViewport && outerWindow.innerHeight - outerViewport.height > 120);
     size();
   }
   function queueViewport() { if (!viewportFrame) viewportFrame = requestAnimationFrame(syncViewport); }
