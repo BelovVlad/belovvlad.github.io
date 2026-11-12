@@ -7,23 +7,40 @@ async function openFilters(page) {
   await page.locator('.ai-filter-toggle').click();
   await expect(page.locator('.ai-filters')).toBeVisible();
 }
-test('desktop picker preserves native source, PDF and length values', async ({page})=>{
+test('desktop source picker still works and old AI preferences no longer affect requests', async ({page})=>{
   await page.setViewportSize({width:1440,height:900});
+  await page.addInitScript(() => {
+    localStorage.setItem('hyle.ai.key', JSON.stringify('test-key'));
+    localStorage.setItem('hyle.ai.preferences.v1',
+      JSON.stringify({pdf_mode:'text', answer_length:'short'}));
+  });
+  await page.route('https://api.hyle.space/ask', async route => {
+    const headers = {'access-control-allow-origin':'*',
+      'access-control-allow-methods':'POST', 'access-control-allow-headers':'authorization, content-type'};
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({status:204, headers});
+      return;
+    }
+    await route.fulfill({headers, contentType:'text/event-stream',
+      body:'event: delta\ndata: {"t":"Проверочный ответ"}\n\nevent: done\ndata: {}\n\n'});
+  });
   await openFilters(page);
   await page.locator('[data-filter="source"] .ai-picker-trigger').click();
   await expect(page.locator('.ai-choice-list')).toBeVisible();
   await page.getByRole('option',{name:'Хелпер ФФ'}).click();
   expect(await page.locator('#ai-source').inputValue()).toBe('helper');
-  await page.locator('[data-filter="pdf"] .ai-picker-trigger').click();
-  await page.getByRole('option',{name:'Проверить скан — точнее'}).click();
-  expect(await page.locator('#ai-pdf-mode').inputValue()).toBe('vision');
-  await page.locator('[data-filter="length"] .ai-picker-trigger').click();
-  await page.getByRole('option',{name:'Подробно'}).click();
-  expect(await page.locator('#ai-answer-length').inputValue()).toBe('detailed');
+  await expect(page.locator('[data-filter="pdf"], [data-filter="length"]')).toHaveCount(0);
   await page.getByRole('button',{name:'↺ Сбросить'}).click();
-  expect(await page.locator('#ai-pdf-mode').inputValue()).toBe('auto');
   expect(await page.locator('#ai-source').inputValue()).toBe('');
   await expect(page.locator('[data-filter="source"] .ai-picker-value')).toHaveText('Все материалы');
+  await page.getByRole('button',{name:'Закрыть фильтры'}).click();
+  await page.locator('#ai-input').fill('Что такое когерентность?');
+  const [request] = await Promise.all([
+    page.waitForRequest(req => req.url() === 'https://api.hyle.space/ask' && req.method() === 'POST'),
+    page.getByRole('button',{name:'Спросить',exact:true}).click()
+  ]);
+  expect(request.postDataJSON()).toMatchObject({pdf_mode:'auto', answer_length:'normal'});
+  await expect(page.getByText('Проверочный ответ',{exact:true})).toBeVisible();
 });
 test('phone choice sheet stays in viewport and supports semester and subject',async ({page})=>{
   await page.setViewportSize({width:375,height:740});
